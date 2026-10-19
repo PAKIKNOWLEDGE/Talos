@@ -158,7 +158,7 @@ function getWallClockParts(timezone: string, utcMs: number): WallClockParts {
 
 function parseDurationMs(input: string): number {
   const raw = input.trim().toLowerCase();
-  const re = /(\d+(?:\.\d+)?)(ms|s|m|h|d)/g;
+  const re = /(\d+(?:\.\d+)?)(ms|s|m|h|d|w)/g;
   let total = 0;
   let consumed = '';
   for (const match of raw.matchAll(re)) {
@@ -174,7 +174,9 @@ function parseDurationMs(input: string): number {
             ? 60_000
             : unit === 'h'
               ? 3_600_000
-              : 86_400_000;
+              : unit === 'w'
+                ? 604_800_000
+                : 86_400_000;
     total += value * factor;
   }
   if (!total || consumed !== raw) {

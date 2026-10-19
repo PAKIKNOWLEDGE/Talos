@@ -900,6 +900,17 @@ export interface ContextManagementConfig {
    * Default: 5.
    */
   cuMaxScreenshotsInContext: number;
+
+  /**
+   * Upper bound for the automatic context compaction trigger.
+   *
+   * A value in `(0, 1]` is a ratio of the current model's context window;
+   * an integer above 1 is an absolute token count. The effective trigger is
+   * the lower of this value and the built-in trigger, so it can only make
+   * compaction start earlier. The runtime ignores invalid numbers (such as
+   * `1.5`) with a warning. Unset keeps the built-in behavior.
+   */
+  compactionTriggerAt?: number;
 }
 
 /**
@@ -1088,6 +1099,8 @@ export interface ModelCapabilitiesConfig {
   max_video_bytes_inline?: number | string;
   max_request_body_bytes?: number | string;
   max_attachments_count?: number | string;
+  /** Most images one provider request may carry; older history images become placeholders. */
+  max_images_per_request?: number | string;
   [key: string]: unknown;
 }
 
@@ -2584,7 +2597,18 @@ function parseContextManagementConfig(
       ? Math.floor(rawCuMax)
       : defaults.cuMaxScreenshotsInContext;
 
-  return { disableSystemReminderModels, cuMaxScreenshotsInContext };
+  // Semantic validation (ratio vs. token count) lives with the trigger in
+  // @mavis/context-manager; keep numbers so the runtime can warn on bad ones.
+  const compactionTriggerAt =
+    typeof obj.compactionTriggerAt === "number"
+      ? obj.compactionTriggerAt
+      : undefined;
+
+  return {
+    disableSystemReminderModels,
+    cuMaxScreenshotsInContext,
+    ...(compactionTriggerAt === undefined ? {} : { compactionTriggerAt }),
+  };
 }
 
 // ── Agent Runtime config parsing — see ./agent-runtime-config.ts for the

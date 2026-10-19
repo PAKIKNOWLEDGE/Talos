@@ -125,6 +125,9 @@ for (const name of ["seccomp", "srt-win", "java-proxy-agent"]) {
     { recursive: true },
   );
 }
+for (const name of ["CHANGELOG.md", "CHANGELOG.zh-CN.md"]) {
+  cpSync(path.join(root, "packages/tui", name), path.join(outdir, name));
+}
 chmodSync(path.join(outdir, "cli.js"), 0o755);
 await copyMcodeToolsArtifact(root, outdir);
 cpSync(path.join(root, 'packages/tui/src/cli/mcode-tools-launchers'), path.join(outdir, 'internal-bin'), { recursive: true });

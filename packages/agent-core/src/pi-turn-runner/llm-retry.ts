@@ -7,6 +7,7 @@ import type {
   SimpleStreamOptions,
 } from '@earendil-works/pi-ai';
 import {
+  isLLMDeterministicRequestRejection,
   normalizeLLMError,
   toLLMMetricErrorKind,
   toLLMProtocolClassification,
@@ -578,8 +579,15 @@ function failureResult(input: {
     ...(input.response ? { statusCode: input.response.status } : {}),
     explicitAbort: input.final?.stopReason === 'aborted',
   });
+  // BYOK retries every pre-output failure because custom gateways report errors
+  // inconsistently. Image-count limits, HTTP 400 invalid_request_error, and
+  // oversized bodies (HTTP 413, request_too_large, context-window overflow)
+  // repeat for the same request, so they fail once. Timeouts, network errors,
+  // and 408/429/5xx stay retryable.
   const decision =
-    input.retryAllErrors && !normalized.facts.explicitAbort
+    input.retryAllErrors &&
+    !normalized.facts.explicitAbort &&
+    !isLLMDeterministicRequestRejection(normalized)
       ? { retryable: true, reason: 'network' as const }
       : toLLMRetryDecision(normalized);
   if (!decision.retryable) {

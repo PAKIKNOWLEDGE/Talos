@@ -5,6 +5,9 @@ declare const __IS_NPM_BUILD__: boolean | undefined;
 
 export type TuiChangelogLanguage = 'en' | 'zh-CN';
 
+// The npm bundle rewrites import.meta.url to the package entry, so these paths
+// are <package root>/CHANGELOG.md next to cli.js. The build copies both files there.
+// The first heading for a version wins. Keep Talos notes above upstream history.
 const TUI_CHANGELOG_PATHS: Readonly<Record<TuiChangelogLanguage, string>> =
   typeof __IS_NPM_BUILD__ !== 'undefined' && __IS_NPM_BUILD__
     ? {

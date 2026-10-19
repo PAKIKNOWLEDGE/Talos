@@ -10409,6 +10409,10 @@ describe("createTuiApp", () => {
     await app.ready;
     await app.submit("/resume session-permission-render");
     await vi.waitFor(() => expect(app.interaction.isActive()).toBe(true));
+    // A user types `/resume`; model that input so the history rebuild for the
+    // welcome-to-conversation switch in this 8-row terminal runs now instead of
+    // being deferred to the permission key (#426, L047).
+    (app.tui as unknown as { onUserInput(): void }).onUserInput();
     app.tui.renderNow();
     terminal.writes.length = 0;
 
@@ -14892,6 +14896,7 @@ describe("interactive CLI model startup", () => {
         warnings: [],
       }));
       const sentModels: unknown[] = [];
+      const lifecycleCalls: { startupModelOverride?: unknown }[] = [];
       vi.mocked(runtime.sendMessage).mockImplementation(async function* (request) {
         sentModels.push(models.get(request.id));
         yield { type: "delta", content: "offline reply" };
@@ -14925,7 +14930,12 @@ describe("interactive CLI model startup", () => {
               readTelemetryEnabled: () => false,
               installProcessGuards: () => () => undefined,
               loadRuntimeLifecycle: async () => ({
-                createTuiRuntime: async () => ({ adapter: runtime }) as never,
+                createTuiRuntime: async (options) => {
+                  lifecycleCalls.push({
+                    startupModelOverride: options.startupModelOverride,
+                  });
+                  return { adapter: runtime } as never;
+                },
                 shutdownTuiRuntime: async () => false,
               }),
               createApp: (options) => {
@@ -14965,6 +14975,19 @@ describe("interactive CLI model startup", () => {
           await app?.submit("/new");
           expect(app?.controller.snapshot().session).toBeUndefined();
           expect(runtime.selectSessionModel).toHaveBeenCalledOnce();
+        }
+        // `--model` only becomes a process-wide Session default when this
+        // invocation is opening fresh Sessions. Paired with `--session` or
+        // `--continue` it must stay scoped to that one existing Session, or a
+        // later `/new` would silently inherit a flag the user did not intend to
+        // keep applying.
+        const reopensExistingSession =
+          sessionId === "existing" || _name === "missing session" || _name === "empty continue";
+        expect(lifecycleCalls).toHaveLength(1);
+        if (reopensExistingSession) {
+          expect(lifecycleCalls[0]?.startupModelOverride).toBeUndefined();
+        } else if (!invalid) {
+          expect(lifecycleCalls[0]?.startupModelOverride).toEqual(requested);
         }
         expect(runtime.selectModel).not.toHaveBeenCalled();
       } finally {

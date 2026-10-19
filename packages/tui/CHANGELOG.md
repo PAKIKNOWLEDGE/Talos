@@ -7,6 +7,21 @@ This changelog covers important changes that directly affect MCode TUI users. It
 
 Internal refactors, test-only changes, and changes limited to other product surfaces are excluded.
 
+Talos release notes are the first heading for that version. Upstream history below keeps older numbers, including another 0.1.4.
+
+## 0.1.5 · 2026-10-19
+
+### Improved
+
+- The opening screen shows these notes for the installed version. The published package now includes this changelog.
+- `ALL_PROXY=socks5://…` no longer aborts startup. A bad SOCKS proxy warns and Talos still starts.
+- A model selected with `-m` or `--model` stays selected after `/new`.
+- Provider addresses keep `?query` parameters during connection tests and model discovery.
+- Oversized requests and requests with too many images fail once and tell you to `/compact` or `/new`, instead of retrying until the session is stuck.
+- A model stream that stays silent times out and retries instead of spinning with no output.
+- Scrolling up through older output is no longer thrown to the top when a reply finishes.
+- `cron once --after` accepts weeks, such as `1w` and `1w2d`.
+
 ## 0.5.5 · 2026-09-25
 
 ### Improved

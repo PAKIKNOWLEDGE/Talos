@@ -80,6 +80,36 @@ The evidence column summarizes the historical TUI 0.3.11 restoration record from
 | Files, shell, subagents, sessions, headless, ACP | Actual runtime retained | BYOK, file reads, session resume, ACP, sandbox, and status protocol tests |
 | Built-in skills, MCP, plugin tools | Original TUI assets and activation conditions retained | Asset build, plugin, and MCP tests; no claim that every skill has passed a real task |
 
+## Model request timeouts
+
+Each model request attempt waits up to 300000 ms for the first provider stream
+event. If the provider accepts the request and sends nothing, the attempt is
+aborted and reported as a retryable timeout, so the existing model-request retry
+runs. After the first event, a stream that stays silent for 300000 ms fails the
+same way. Once visible output has started, the turn fails rather than retrying.
+Set `TALOS_LLM_FIRST_EVENT_TIMEOUT_MS` or `TALOS_LLM_STREAM_IDLE_TIMEOUT_MS` to
+a non-negative integer in milliseconds. `0` disables that bound. Hosts can also
+set `firstEventTimeoutMs` and `streamIdleTimeoutMs` per model. The timeout error
+names the setting that fired. The 20-minute overall request limit still applies.
+
+## Automatic context compaction trigger
+
+Automatic compaction starts before a model request whose context exceeds the
+built-in trigger. That trigger reserves the configured output limit (capped at a
+quarter of the window) and then takes 95% of the remainder. To compact earlier,
+set an upper bound in the data directory's `config.yaml`:
+
+```yaml
+contextManagement:
+  compactionTriggerAt: 0.8 # ratio of the context window, or e.g. 300000 tokens
+```
+
+A value in `(0, 1]` is a ratio of the current model's context window; an integer
+above 1 is an absolute token count. The effective trigger is the lower of this
+value and the built-in trigger, so the setting can start compaction earlier but
+never later. Unset keeps the built-in trigger. Other values, such as `1.5`, `0`,
+and negative numbers, are ignored. `/compact` remains available at any time.
+
 ## Local Bash execution
 
 When the current turn includes native `task_output`, foreground Bash waits up to

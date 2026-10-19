@@ -247,6 +247,9 @@ const COMMAND_SOURCES: readonly TuiCommandSource[] = [
     description: 'Resend the last message after a failed response',
     category: 'Session',
     discoverability: 'contextual',
+    // A response that is still running has not failed yet: tell the user to
+    // stop it rather than claiming there is nothing to retry.
+    runAvailability: 'idle',
     visibleWhen: (context) => context.canRetry && !context.hasLiveRun,
     unavailableReason: 'There is no failed response to retry in this Session.',
   },

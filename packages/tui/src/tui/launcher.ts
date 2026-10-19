@@ -23,7 +23,7 @@ import {
 import { createTuiApp, type CreateTuiAppOptions, type TuiApp } from './app.js';
 import type { CreatedTuiRuntime, CreateTuiRuntimeDependencies } from '../runtime/lifecycle.js';
 import { parseHeadlessModelOverride } from '../headless/model-selection.js';
-import type { TuiRuntime, TuiWorkspaceRoot } from '../runtime/port.js';
+import type { TuiModelSelection, TuiRuntime, TuiWorkspaceRoot } from '../runtime/port.js';
 import { createDeferredTuiRuntime } from '../runtime/deferred.js';
 import {
   captureTuiIncidentBestEffort,
@@ -106,6 +106,7 @@ interface RuntimeLifecycleModule {
       surface: 'tui';
       observability: TuiObservability;
       lane?: string;
+      startupModelOverride?: TuiModelSelection;
     },
     dependencies?: Pick<CreateTuiRuntimeDependencies, 'sharedAuthCore'>,
   ): Promise<CreatedTuiRuntime>;
@@ -165,6 +166,19 @@ export async function launchTui(
   if (!options.terminal && (!process.stdin.isTTY || !process.stdout.isTTY)) {
     throw new Error('Talos interactive mode requires a TTY.');
   }
+
+  // A bare `--model` means "use this model for this invocation", so every
+  // Session this process opens — including the one `/new` creates later — must
+  // inherit it. Paired with an existing Session id or `--continue` the flag
+  // only retargets that Session, so promoting it to a process default would
+  // leak into unrelated `/new` Sessions; that case is handled separately in
+  // prepareInitialTuiState and must stay session-scoped.
+  const startupModelOverride =
+    options.model !== undefined &&
+    !options.sessionId?.trim() &&
+    !options.continueLatestSession
+      ? parseHeadlessModelOverride(options.model.trim())
+      : undefined;
 
   const homeDirectory = options.homeDir ?? homedir();
   const workspaceDir = options.workspaceDir ?? process.cwd();
@@ -333,6 +347,7 @@ export async function launchTui(
           surface: 'tui',
           observability,
           ...(bedrockLane ? { lane: bedrockLane } : {}),
+          ...(startupModelOverride ? { startupModelOverride } : {}),
         },
         { sharedAuthCore },
       );

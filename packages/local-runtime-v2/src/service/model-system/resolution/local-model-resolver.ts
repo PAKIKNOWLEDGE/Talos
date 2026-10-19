@@ -7,6 +7,11 @@ import {
 } from '@earendil-works/pi-ai';
 import type { StreamFn, ThinkingLevel as PiThinkingLevel } from '@earendil-works/pi-agent-core';
 import {
+  knownMaxImagesPerRequestForBaseUrl,
+  normalizeMaxImagesPerRequest,
+  type ModelRequestImageLimit,
+} from '@mavis/agent-core/pi-turn-runner';
+import {
   isFirstPartyMinimaxMessagesRoute,
   resolveProviderAuthMode,
   type ProviderAuthMode,
@@ -623,7 +628,10 @@ function buildResolvedModel(scope: {
   const { input, contextWindow, maxTokens, baseUrl, thinking } = scope;
   const thinkingLevelMap = resolvedThinkingLevelMap(thinking);
   const compat = resolvedModelCompatibility(input, thinking);
-  return {
+  const maxImagesPerRequest =
+    normalizeMaxImagesPerRequest(input.modelRef.capabilities?.max_images_per_request) ??
+    knownMaxImagesPerRequestForBaseUrl(baseUrl);
+  const model: Model<Api> & ModelRequestImageLimit = {
     id: input.modelId,
     name: input.modelId,
     api: input.api,
@@ -636,7 +644,11 @@ function buildResolvedModel(scope: {
     contextWindow,
     maxTokens,
     ...(compat ? { compat } : {}),
+    // Request builders read this from the model so agent turns, compaction
+    // checkpoints and footprint estimates share one image ceiling.
+    ...(maxImagesPerRequest === undefined ? {} : { maxImagesPerRequest }),
   };
+  return model;
 }
 
 function resolvedThinkingLevelMap(thinking: ResolvedThinking): ThinkingLevelMap | undefined {

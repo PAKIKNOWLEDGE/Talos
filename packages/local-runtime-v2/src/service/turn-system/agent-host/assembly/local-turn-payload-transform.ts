@@ -63,6 +63,10 @@ export function buildLocalTurnPayloadTransform(
     options.managedProvider,
     thinkingOn,
   );
+  const selectedEffort =
+    !options.managedProvider && thinkingOn
+      ? readSelectedThinkingEffort(modelConfig ?? {}, capabilities ?? {})
+      : undefined;
 
   return (payload: unknown, model: Model<Api>): Promise<unknown | undefined> =>
     transformLocalTurnPayload({
@@ -72,6 +76,7 @@ export function buildLocalTurnPayloadTransform(
       fileApiPatcher,
       thinking,
       managedThinking,
+      ...(selectedEffort ? { selectedEffort } : {}),
       thinkingRequestPatch: options.thinkingRequestPatch,
       outputContract: options.outputContract,
       jsonObjectOutputEnabled: options.supportsJsonObjectOutput === true,
@@ -85,7 +90,7 @@ function readManagedThinking(
   enabled: boolean,
 ) {
   if (!managed) return undefined;
-  const effort = model.thinking_effort ?? capabilities.selected_thinking_effort;
+  const effort = readRawThinkingEffort(model, capabilities);
   if (
     model.thinking_level === undefined &&
     capabilities.thinking_mode === undefined &&
@@ -99,6 +104,28 @@ function readManagedThinking(
       ? { effort }
       : {}),
   };
+}
+
+function readRawThinkingEffort(
+  model: Record<string, unknown>,
+  capabilities: Record<string, unknown>,
+): unknown {
+  return model.thinking_effort ?? capabilities.selected_thinking_effort;
+}
+
+/**
+ * The explicitly selected effort level for an API-key request. Plain on/off
+ * models have no level, and `default` means "let the provider decide", so
+ * neither is forwarded.
+ */
+function readSelectedThinkingEffort(
+  model: Record<string, unknown>,
+  capabilities: Record<string, unknown>,
+): string | undefined {
+  const effort = readRawThinkingEffort(model, capabilities);
+  return typeof effort === 'string' && !['', 'on', 'off', 'default'].includes(effort)
+    ? effort
+    : undefined;
 }
 
 export function buildLocalRequestPayloadTransform(
@@ -181,6 +208,8 @@ async function transformLocalTurnPayload(input: {
     readonly mode: unknown;
     readonly effort?: string;
   };
+  /** User-selected effort for an unmanaged (API-key) request; see patchThinkingPayload. */
+  readonly selectedEffort?: string;
   readonly thinkingRequestPatch: Readonly<Record<string, unknown>> | undefined;
   readonly outputContract: TurnOutputContract | undefined;
   readonly jsonObjectOutputEnabled: boolean;
@@ -196,7 +225,7 @@ async function transformLocalTurnPayload(input: {
     );
     const thinkingChanged = input.managedThinking
       ? patchManagedThinkingPayload(input.payload, input.thinking, input.managedThinking)
-      : patchThinkingPayload(input.payload, input.thinking, input.model);
+      : patchThinkingPayload(input.payload, input.thinking, input.model, input.selectedEffort);
     changed = videoChanged || fileApiChanged || thinkingChanged;
   }
   const requestPatchChanged = patchRequestPayload(input.payload, input.thinkingRequestPatch);
@@ -367,6 +396,7 @@ function patchThinkingPayload(
   payload: Record<string, unknown>,
   thinking: Record<string, unknown> | undefined,
   model: Model<Api>,
+  selectedEffort: string | undefined,
 ): boolean {
   if (!thinking || !Array.isArray(payload.messages)) return false;
   if (model.api === 'anthropic-messages' && isDefaultThinkingModelId(model.id)) {
@@ -375,7 +405,14 @@ function patchThinkingPayload(
     return hadThinking;
   }
   payload.thinking = { ...thinking };
-  if (!shouldPreserveCustomProviderTopEffort(payload, model)) delete payload.output_config;
+  if (shouldPreserveCustomProviderTopEffort(payload, model)) return true;
+  if (selectedEffort && parseProviderId(model.provider)?.source === 'minimax_api') {
+    // The MiniMax API-key path speaks the same Messages dialect as the managed
+    // gateway; keep the selected `--effort` exactly like patchManagedThinkingPayload.
+    payload.output_config = { ...readRecord(payload.output_config), effort: selectedEffort };
+    return true;
+  }
+  delete payload.output_config;
   return true;
 }
 
