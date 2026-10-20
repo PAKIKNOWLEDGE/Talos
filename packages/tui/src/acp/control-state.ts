@@ -7,6 +7,7 @@ import {
 } from '../application/permission-mode.js';
 import type { TuiInspectionPort, TuiModel, TuiSession, TuiSessionUsage } from '../runtime/port.js';
 import { modelSupportsVariant } from './model-selection.js';
+
 export const ACP_MODE_DEFAULT = 'default';
 
 /** Minimal runtime surface for session mode + config option snapshots. */
