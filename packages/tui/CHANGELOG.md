@@ -9,6 +9,15 @@ Internal refactors, test-only changes, and changes limited to other product surf
 
 Talos release notes are the first heading for that version. Upstream history below keeps older numbers, including another 0.1.4.
 
+## 0.1.6 · 2026-10-21
+
+### Improved
+
+- Auto mode asks your `/settings` LLM judge instead of MiniMax's permission-check API.
+- The judge follows Claude-style HARD/SOFT rules: ordinary reads can auto-allow; credentials, pushes, and writes outside the workspace still ask you.
+- `/settings` (also `/options` and `/选项`) has a dedicated LLM judge page. Reuse a `/model` credential or enter a separate judge.
+- Thinking-model replies with empty `content` are read from reasoning. A failed judge asks you instead of pretending it timed out.
+
 ## 0.1.5 · 2026-10-19
 
 ### Improved

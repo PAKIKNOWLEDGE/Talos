@@ -2505,18 +2505,47 @@ describe('LocalPermissionFacade', () => {
   });
 
   describe('cloud gateway (auto mode)', () => {
-    it.each(['engine', 'core'] as const)('keeps neutral Auto undecided actions on user confirmation with %s policy owner', async (policyOwner) => {
-      vi.stubEnv('TALOS_NEUTRAL_RUNTIME', '1');
-      const classify = vi.fn(async () => ({ kind: 'allow' as const, reasonLocalized: 'synthetic cloud allow' }));
+    it.each(['engine', 'core'] as const)('lets the user LLM judge allow an undecided Auto action with %s policy owner', async (policyOwner) => {
+      const classify = vi.fn(async () => ({ kind: 'allow' as const, reasonLocalized: 'routine publish' }));
       configurePermissionHost({ runtimeConfigProvider: {
-        getConfig: () => ({}), getRuntimeRegion: () => 'en', getRuntimeBuildEnv: () => 'prod', isManagedRuntime: () => true,
+        getConfig: () => ({}), getRuntimeRegion: () => 'en', getRuntimeBuildEnv: () => 'prod', isManagedRuntime: () => false,
       } });
       const { facade, dataDir } = freshFacade({ permissionMode: 'auto', policyOwner, cloudGateway: { classify } });
       try {
         await expect(facade.checkPermission({ toolName: 'bash', input: { command: 'npm publish' } }))
-          .resolves.toMatchObject({ behavior: 'ask' });
-        expect(classify).not.toHaveBeenCalled();
-      } finally { cleanup(dataDir); resetPermissionHostForTesting(); vi.unstubAllEnvs(); }
+          .resolves.toMatchObject({ behavior: 'allow' });
+        expect(classify).toHaveBeenCalledOnce();
+      } finally { cleanup(dataDir); resetPermissionHostForTesting(); }
+    });
+
+    it('turns a judge refusal into an ask that keeps the reason', async () => {
+      const classify = vi.fn(async () => ({
+        kind: 'confirm' as const,
+        reasonLocalized: 'npm publish leaves the workspace registry',
+      }));
+      const { facade, dataDir } = freshFacade({ permissionMode: 'auto', cloudGateway: { classify } });
+      try {
+        await expect(facade.checkPermission({ toolName: 'bash', input: { command: 'npm publish' } }))
+          .resolves.toMatchObject({
+            behavior: 'ask',
+            reason: expect.stringContaining('npm publish leaves the workspace registry'),
+          });
+      } finally { cleanup(dataDir); }
+    });
+
+    it('turns a judge block verdict into an ask that keeps the Why', async () => {
+      const classify = vi.fn(async () => ({
+        kind: 'block' as const,
+        reasonLocalized: 'npm publish leaves the workspace registry',
+      }));
+      const { facade, dataDir } = freshFacade({ permissionMode: 'auto', cloudGateway: { classify } });
+      try {
+        await expect(facade.checkPermission({ toolName: 'bash', input: { command: 'npm publish' } }))
+          .resolves.toMatchObject({
+            behavior: 'ask',
+            reason: expect.stringContaining('npm publish leaves the workspace registry'),
+          });
+      } finally { cleanup(dataDir); }
     });
 
     it('preserves explicit local allow/deny rules and non-bypassable hard denial in neutral Auto', async () => {
@@ -2541,18 +2570,77 @@ describe('LocalPermissionFacade', () => {
       } finally { cleanup(dataDir); resetPermissionHostForTesting(); vi.unstubAllEnvs(); }
     });
 
-    // We exercise the cloud-gateway branch by forcing shouldUseCloudClassify
-    // via an injected gateway and a managed-runtime fixture. Since
-    // shouldUseCloudClassify() reads runtime host state and we cannot easily
-    // enable it from a unit test without poking module internals, we instead
-    // verify the facade fall-through path (skipAutoClassifier OR no managed
-    // runtime → ask without calling the gateway).
-    it('auto mode without managed-runtime token falls through to ask without calling gateway', async () => {
-      const calls: CloudClassifyRequest[] = [];
+    it('lets the Auto judge review web_fetch instead of the canned local Why', async () => {
+      const classify = vi.fn(async (req: CloudClassifyRequest) => {
+        expect(req.toolName).toBe('web_fetch');
+        expect(req.input).toContain('probe.invalid');
+        return {
+          kind: 'confirm' as const,
+          reasonLocalized: '要访问工作区外的网址，先确认一下',
+        };
+      });
+      const { facade, dataDir } = freshFacade({ permissionMode: 'auto', cloudGateway: { classify } });
+      try {
+        await expect(
+          facade.checkPermission({
+            toolName: 'web_fetch',
+            input: { url: 'http://probe.invalid/classifier-test' },
+          }),
+        ).resolves.toMatchObject({
+          behavior: 'ask',
+          reason: expect.stringContaining('要访问工作区外的网址，先确认一下'),
+        });
+        expect(classify).toHaveBeenCalledOnce();
+      } finally {
+        cleanup(dataDir);
+      }
+    });
+
+    it('lets the Auto judge allow web_fetch', async () => {
+      const classify = vi.fn(async () => ({
+        kind: 'allow' as const,
+        reasonLocalized: 'public documentation fetch',
+      }));
+      const { facade, dataDir } = freshFacade({ permissionMode: 'auto', cloudGateway: { classify } });
+      try {
+        await expect(
+          facade.checkPermission({
+            toolName: 'web_fetch',
+            input: { url: 'https://example.com/docs' },
+          }),
+        ).resolves.toMatchObject({ behavior: 'allow' });
+        expect(classify).toHaveBeenCalledOnce();
+      } finally {
+        cleanup(dataDir);
+      }
+    });
+
+    it('keeps the canned local Why for web_fetch in default Ask mode', async () => {
+      const classify = vi.fn(async () => ({ kind: 'allow' as const, reasonLocalized: 'should not run' }));
+      const { facade, dataDir } = freshFacade({
+        permissionMode: 'default',
+        cloudGateway: { classify },
+      });
+      try {
+        const result = await facade.checkPermission({
+          toolName: 'web_fetch',
+          input: { url: 'http://probe.invalid/classifier-test' },
+        });
+        expect(result.behavior).toBe('ask');
+        expect(String(result.reason)).toContain('Local permission check requires approval');
+        expect(classify).not.toHaveBeenCalled();
+      } finally {
+        cleanup(dataDir);
+      }
+    });
+
+    it('asks when the injected judge is unavailable', async () => {
       const gw: CloudGatewayClient = {
-        async classify(req): Promise<CloudClassifyVerdict> {
-          calls.push(req);
-          return { kind: 'allow', reasonLocalized: 'ok' };
+        async classify(): Promise<CloudClassifyVerdict> {
+          return {
+            kind: 'timeout',
+            reasonLocalized: 'No LLM judge is configured. Open /settings → LLM judge.',
+          };
         },
       };
       const { facade, dataDir } = freshFacade({ permissionMode: 'auto', cloudGateway: gw });
@@ -2561,10 +2649,8 @@ describe('LocalPermissionFacade', () => {
           toolName: 'bash',
           input: { command: 'npm publish' },
         });
-        // No managed token in unit test → shouldUseCloudClassify() = false
-        // → gateway not called.
-        expect(calls.length).toBe(0);
         expect(r.behavior).toBe('ask');
+        expect(String(r.reason)).toContain('LLM judge');
       } finally {
         cleanup(dataDir);
       }

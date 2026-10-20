@@ -13,6 +13,23 @@
 
 export type PermissionPolicyOwner = 'engine' | 'core';
 export type PermissionStorageWriteVersion = 1 | 2;
+export type PermissionJudgeSource = 'provider' | 'manual';
+export type PermissionJudgeApi = 'openai-completions' | 'anthropic-messages';
+
+/**
+ * Auto-mode LLM judge. `provider` reuses a `/model` credential.
+ * `manual` stores a separate judge endpoint (for example DeepSeek while
+ * the coding model stays GPT).
+ */
+export interface PermissionJudgeConfig {
+  source: PermissionJudgeSource;
+  providerId?: string;
+  modelId?: string;
+  baseURL?: string;
+  apiKey?: string;
+  model?: string;
+  api?: PermissionJudgeApi;
+}
 
 export interface PermissionConfig {
   /**
@@ -41,6 +58,9 @@ export interface PermissionConfig {
    * false so an ASK decision fails closed instead of waiting forever.
    */
   userConfirmationEnabled: boolean;
+
+  /** Absent or incomplete means auto mode asks the user instead of calling a judge. */
+  judge?: PermissionJudgeConfig;
 }
 
 export const PERMISSION_CONFIG_DEFAULTS: PermissionConfig = {
@@ -83,5 +103,34 @@ export function parsePermissionConfig(
     typeof obj.userConfirmationEnabled === 'boolean'
       ? obj.userConfirmationEnabled
       : defaults.userConfirmationEnabled;
-  return { policyOwner, storageWriteVersion, classifierTimeoutMs, userConfirmationEnabled };
+  const judge = parsePermissionJudgeConfig(obj.judge);
+  return {
+    policyOwner,
+    storageWriteVersion,
+    classifierTimeoutMs,
+    userConfirmationEnabled,
+    ...(judge ? { judge } : {}),
+  };
+}
+
+export function parsePermissionJudgeConfig(raw: unknown): PermissionJudgeConfig | undefined {
+  if (raw == null || typeof raw !== 'object' || Array.isArray(raw)) return undefined;
+  const obj = raw as Record<string, unknown>;
+  const source = obj.source === 'manual' || obj.source === 'provider' ? obj.source : undefined;
+  if (!source) return undefined;
+  const text = (value: unknown): string | undefined =>
+    typeof value === 'string' && value.trim() ? value.trim() : undefined;
+  const api =
+    obj.api === 'anthropic-messages' || obj.api === 'openai-completions' ? obj.api : undefined;
+  if (source === 'provider') {
+    const providerId = text(obj.providerId);
+    const modelId = text(obj.modelId);
+    if (!providerId || !modelId) return undefined;
+    return { source, providerId, modelId, ...(api ? { api } : {}) };
+  }
+  const baseURL = text(obj.baseURL);
+  const apiKey = text(obj.apiKey);
+  const model = text(obj.model);
+  if (!baseURL || !apiKey || !model) return undefined;
+  return { source, baseURL, apiKey, model, ...(api ? { api } : {}) };
 }

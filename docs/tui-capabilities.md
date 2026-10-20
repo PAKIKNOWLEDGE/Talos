@@ -75,7 +75,7 @@ The evidence column summarizes the historical TUI 0.3.11 restoration record from
 | Feedback and diagnostic uploads | Reviewed feedback text and minimized diagnostic summaries | Synthetic fixtures exercise session collection and capture/decode the final ZIP upload; no live uploads or real content |
 | Automatic LLM error reports | Disabled by default; requires `telemetry.diagnostics` opt-in; bounded diagnostic facts minimized before encryption | Synthetic provider errors and native Headers; final HTTP batches captured and decrypted locally |
 | Telemetry | Usage, metrics, and diagnostics each disabled by default with separate opt-ins; `MCODE_DISABLE_TELEMETRY` / `DO_NOT_TRACK` override all channels; usage-event identifiers removed | Privacy regression tests intercept and decode requests locally; no live upload |
-| Auto permissions | Cloud classifier restored; local rules and confirmation on failure retained | Classifier client, permission facade, and sandbox tests |
+| Auto permissions | User LLM judge via /settings; local rules first; judge refusal becomes ask with a Why reason | Judge config, permission facade, and settings picker tests |
 | Model catalog | Online catalog and bundled snapshot fallback restored | Actual build boundary checks and offline startup; online catalog contents not accepted |
 | Files, shell, subagents, sessions, headless, ACP | Actual runtime retained | BYOK, file reads, session resume, ACP, sandbox, and status protocol tests |
 | Built-in skills, MCP, plugin tools | Original TUI assets and activation conditions retained | Asset build, plugin, and MCP tests; no claim that every skill has passed a real task |

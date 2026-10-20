@@ -11,6 +11,7 @@ function createFeatureFlowMock() {
     waitForWelcomeModelSelection: vi.fn(async () => undefined),
     applyPendingModelSelection: vi.fn(async () => undefined),
     showChangelog: vi.fn(async () => undefined),
+    listReusableJudgeModels: vi.fn(async () => []),
   };
 }
 
@@ -352,12 +353,29 @@ describe("TuiCommandFlow", () => {
     const picker = surface.show.mock.calls.at(-1)?.[0] as {
       handleInput(data: string): void;
     };
+    picker.handleInput("\r");
     picker.handleInput("\u001b[B");
     picker.handleInput("\r");
 
     expect(surfaceHost.setChatMode).toHaveBeenCalledWith("fullscreen");
     expect(persistTuiMode).toHaveBeenCalledWith("fullscreen");
     expect(surface.close).toHaveBeenCalledWith(picker);
+  });
+
+  it.each(["/options", "/选项"])("opens Settings from the %s alias", async (command) => {
+    const surface = { show: vi.fn(), close: vi.fn(() => true) };
+    const surfaceHost = {
+      getChatMode: vi.fn(() => "regular" as const),
+      setChatMode: vi.fn(() => true),
+    };
+    const flow = createReadinessCommandFlow({
+      whenReady: vi.fn(async () => undefined),
+      surface,
+      surfaceHost,
+    });
+
+    await expect(flow.submit(command)).resolves.toBe("consumed");
+    expect(surface.show).toHaveBeenCalledOnce();
   });
 
   it("reloads TUI configuration only while the product is idle", async () => {

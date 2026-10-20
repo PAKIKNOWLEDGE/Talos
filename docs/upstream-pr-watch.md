@@ -37,6 +37,7 @@ Do **not** merge upstream during a Talos feature slice unless the pre-release sc
 | 2026-10-09 | 0.1.3 (ACP `session/delete`) | Open: #462–#460 drafts (413/retry, effort, body limit), #459 draft (reminders perf), #364 Linux/XDG, #319 SQLite contention, #317 model persist, #307 BYOK env, #255 sandbox modes, #186 endpoint query, dependabot #146/#145 | **No** | **release: proceed** — no merged upstream emergency; drafts not intake. Re-check before next npm. |
 | 2026-10-10 | 0.1.4 (`talos studio` v2) | Open: #471 OSC status, #468 dependabot tooling, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps | **No** | **release: proceed** — no P0 merged upstream; record-only. |
 | 2026-10-19 | 0.1.5 (welcome notes + selective ports) | Same open set as the 2026-10-19 issue #3 review: #500 #499 #493 #364 #319 #317 #307 #255 #186 #146 #145. Merged since 10-12: #492 #487 #484 #471. | **No** | **release: proceed** — ports are selective; no upstream main merge. |
+| 2026-10-21 | 0.1.6 (Auto LLM permission judge) | Open: #500 #499 tooling/actions deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. No new merged P0 since 0.1.5. | **No** | **release: proceed** — record-only; Talos judge work is local. |
 
 ## References
 

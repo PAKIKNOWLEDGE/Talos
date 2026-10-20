@@ -15,7 +15,7 @@ export const requiredStandaloneInputs = [
   'packages/local-runtime-v2/src/service/plugin-system/app/cloud-client.ts',
   'packages/local-runtime-v2/src/service/model-system/catalog/provider-presets/provider-presets.client.ts',
   'packages/local-runtime/src/web-search/local-web-search-client.ts',
-  'packages/agent-modules/permission/src/http-cloud-gateway-client.ts',
+  'packages/local-runtime/src/permissions/llm-judge-gateway-client.ts',
   "packages/tui/src/cli/main.ts",
   "packages/tui/src/tui/controller/product/update-flow.ts",
 ];

@@ -14,7 +14,7 @@ type VisiblePermissionMode = (typeof MINIMAX_CODE_PERMISSION_MODES)[number];
 
 const PERMISSION_MODE_DESCRIPTIONS: Record<VisiblePermissionMode, string> = {
   default: 'Confirm sensitive actions',
-  auto: 'Ask only when risk is high',
+  auto: 'Local rules, then the /settings LLM judge',
   bypassPermissions: 'Run without confirmation',
 };
 
@@ -119,11 +119,7 @@ function renderMode(
   ]
     .filter(Boolean)
     .join(' ');
-  const description = chalk.hex(colors.muted)(
-    mode === 'auto' && process.env.TALOS_NEUTRAL_RUNTIME === '1'
-      ? 'Local checks; confirm uncertain actions'
-      : PERMISSION_MODE_DESCRIPTIONS[mode],
-  );
+  const description = chalk.hex(colors.muted)(PERMISSION_MODE_DESCRIPTIONS[mode]);
   const heading = `${prefix} ${label}`;
 
   if (options.compact) {

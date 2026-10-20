@@ -14,9 +14,9 @@
  *     (`on-request` / `on-request-llm` / `never`) for policy clarity, but the
  *     flow is routed through `PermissionEngine.checkPermission(...)` with a
  *     snapshotted `core` (default) or `engine` (rollback) policy owner.
- *   - LLM layer: `auto` mode consults `HttpCloudGatewayClient` →
- *     `POST /mavis/api/v1/permission/check`. acceptEdits is normalized to
- *     `default` at entry.
+ *   - LLM layer: `auto` mode consults the user-configured LLM judge. A
+ *     missing or failed judge fail-closes to ask with the reason. acceptEdits
+ *     is normalized to `default` at entry.
  *
  * `LocalPermissionApprovalService` owns pending/dedupe/waiter/persistence;
  * routes only adapt the typed `permission.ask` product-event flow. The facade is a pure
@@ -32,7 +32,6 @@ import {
   PermissionEngine,
   reducePermissionClassifierDecision,
   registerDefaultCheckers,
-  HttpCloudGatewayClient,
   modeToAskPolicy,
   renderConversationContext,
   formatDecisionReason,
@@ -72,6 +71,7 @@ import type { MetricsClient } from '../common/metrics.js';
 import { logger } from '../common/logger.js';
 import { readLocalPermissionMode } from '../api/host-helpers.js';
 import { applyAskGate } from './ask-gate.js';
+import { LlmJudgeGatewayClient } from './llm-judge-gateway-client.js';
 import { selectMatchingRule } from './rule-match.js';
 import {
   hasWindowsWriteOrDeleteCommand,
@@ -383,10 +383,9 @@ export interface LocalPermissionFacadeDeps {
   getLocalAgent: (agentName: string) => Promise<{ defaultWorkspaceDir?: string } | undefined>;
   messageStore?: LocalPermissionMessageSource;
   /**
-   * Optional override for tests — swap the cloud gateway for an in-memory
-   * client. Production never passes this; the facade default-constructs an
-   * HttpCloudGatewayClient pointing at the
-   * /mavis/api/v1/permission/check endpoint via region routing.
+   * Optional override for tests — swap the auto-mode LLM judge.
+   * Production never passes this; the facade default-constructs an
+   * `LlmJudgeGatewayClient` that uses `permission.judge` in config.yaml.
    */
   cloudGateway?: CloudGatewayClient;
   /** Per-call cloud-gateway timeout (ms). Default 60_000. */
@@ -418,7 +417,7 @@ export class LocalPermissionFacade {
     this.deps = deps;
     this.cloudGatewayTimeoutMs = deps.cloudGatewayTimeoutMs ?? 60_000;
     this.cloudGateway =
-      deps.cloudGateway ?? new HttpCloudGatewayClient({ timeoutMs: this.cloudGatewayTimeoutMs });
+      deps.cloudGateway ?? new LlmJudgeGatewayClient({ timeoutMs: this.cloudGatewayTimeoutMs });
     this.engine = new PermissionEngine();
     registerDefaultCheckers(this.engine);
   }
@@ -665,7 +664,7 @@ export class LocalPermissionFacade {
     //   - ruleContents (BashChecker/FsChecker normalized — e.g. "npm publish:*")
     //   - rewrittenInput (rm → mavis-trash)
     //   - skipAutoClassifier (defensive net — keep ask out of LLM)
-    const decision = this.engine.checkPermission(params.toolName, params.input, ctx, {
+    let decision = this.engine.checkPermission(params.toolName, params.input, ctx, {
       policyOwner,
       onCheckerDecision: (trace) => {
         logger.info(
@@ -706,10 +705,10 @@ export class LocalPermissionFacade {
       `permission.${policyOwner}.decision`,
     );
 
-    // policy deny (sensitive credential path) under default/auto — demote
-    // allow → ask so the LLM gate / user can authorize. Under
-    // bypassPermissions we skip this branch so the engine's allow stays
-    // allow (matches "Always allow" semantics).
+    // policy deny (web_fetch, website_deploy, leftover sensitive paths)
+    // under default/auto — demote allow → ask so a person or the LLM
+    // judge can authorize. Under bypassPermissions we skip this branch so
+    // the engine's allow stays allow (matches "Always allow" semantics).
     //
     // Exception: when the user has a persisted allow rule that matches this
     // tool call (either via the engine's rule match or the local rule store's
@@ -717,6 +716,10 @@ export class LocalPermissionFacade {
     // authorized this tool; overriding it back to ask would make the stored
     // rule ineffective and cause repeated permission popups on every call
     // despite the user clicking "Always allow".
+    //
+    // Auto (`on-request-llm`) must not return the canned local Why here:
+    // that card looks like the classifier but never called it. Convert the
+    // engine allow into an ordinary ASK and fall through to the judge.
     if (
       askPolicy !== 'never' &&
       localHardCheck?.behavior === 'deny' &&
@@ -725,9 +728,21 @@ export class LocalPermissionFacade {
       decision.reason.type !== 'rule' &&
       !hasMatchingLocalAllowRule(rules, params.toolName, params.input)
     ) {
-      return {
+      if (askPolicy !== 'on-request-llm') {
+        return {
+          behavior: 'ask',
+          reason: localHardCheck.reason,
+        };
+      }
+      decision = {
+        ...decision,
         behavior: 'ask',
-        reason: localHardCheck.reason,
+        reason: {
+          type: 'safetyCheck',
+          description: localHardCheck.reason,
+          classifierApprovable: true,
+        },
+        skipAutoClassifier: false,
       };
     }
 
@@ -806,10 +821,8 @@ export class LocalPermissionFacade {
       );
     };
 
-    // 'on-request-llm' (Smart approval / auto): consult cloud gateway BEFORE ask.
-    // Cloud classify only fires in managed runtime contexts (a configured
-    // Bearer token resolver). Pure local dev daemons + tests fall through to
-    // ask so they don't hang on a real HTTP call.
+    // 'on-request-llm' (Smart approval / auto): consult the user LLM judge
+    // BEFORE ask. An unconfigured or failed judge fail-closes to ask.
     if (decision.skipAutoClassifier || !shouldUseCloudClassify()) {
       logClassifierDecision(
         'skipped',
@@ -824,7 +837,7 @@ export class LocalPermissionFacade {
       params.latestUserMessages,
       params.recentMessages,
     );
-    // Hardening: even though HttpCloudGatewayClient fails closed on every
+    // Hardening: even though the LLM judge fails closed on every
     // documented error branch, we wrap classifyViaCloud in a catch-all so
     // any unexpected runtime throw (e.g. region-resolver glitch on first
     // boot, AbortError before fetch is created) still routes to ASK rather
@@ -881,11 +894,9 @@ export class LocalPermissionFacade {
         );
       case 'timeout':
       default:
-        // Surface the client's reasonLocalized as the suffix so 5xx /
-        // network / abort failures stay distinguishable on the UI card
-        // and in daemon logs. The client already prefixes its reason
-        // with "timed out", "permission/check returned 500",
-        // "permission/check biz error", etc.
+        // Surface the client's reasonLocalized as the suffix so missing
+        // judge config, HTTP, and abort failures stay distinguishable on
+        // the UI card and in daemon logs.
         return mapClassifierRecommendation(
           decision,
           'ask',

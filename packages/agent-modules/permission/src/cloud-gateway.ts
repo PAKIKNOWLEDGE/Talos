@@ -1,46 +1,18 @@
 /**
- * CloudGatewayClient — daemon-side abstraction over the existing managed
- * permission classify endpoint.
+ * CloudGatewayClient — auto-mode LLM judge seam.
  *
- * Wire contract is pixel-aligned to the production endpoint already in use:
+ * Talos injects `LlmJudgeGatewayClient`, which calls the user-configured
+ * judge model. MiniMax `/mavis/api/v1/permission/check` is not used.
  *
- *   POST {region-routed-host}/mavis/api/v1/permission/check
- *   Authorization: Bearer <managed-auth-token>
- *
- *   Request:
- *     {
- *       "tool_name":         string,
- *       "input":             string,         // serialized tool input
- *       "platform":          string,
- *       "home_dir":          string,
- *       "workspace_root":    string,
- *       "mode":              "auto",
- *       "conversation_context": string,      // pre-rendered by daemon
- *       "agent_id":          string?,
- *       "session_id":        string?
- *     }
- *
- *   Response:
- *     {
- *       "base_resp": { "status_code": number, "status_msg": string },
- *       "verdict":   "allow" | "confirm" | "block",
- *       "reason":    string
- *     }
- *
- * The cloud side is intentionally untouched. Prompt assembly stays in the
- * local runtime (`packages/local-runtime/prompts/llm-gate-classifier.md`),
- * conversation context is rendered runtime-side (see `conversation-renderer.ts`),
- * and the cloud endpoint remains a thin wrapper around gemini-flash with the
- * same prompt baked in.
+ * Prompt assembly and JSON parsing live in local-runtime's
+ * `LlmJudgeGatewayClient`. Conversation context is rendered runtime-side
+ * (see `conversation-renderer.ts`). A judge `deny`/`block` is mapped to
+ * `confirm` so the permission card still asks the user and shows Why.
  *
  * Future-compatibility hooks:
- *   - `daemonPromptVersion` is sent so the cloud side can log/route by
- *     prompt revision when it adopts a registry. Unknown today, ignored
- *     server-side.
- *   - `suggestedRule` is reserved in the verdict shape so a future cloud
- *     response can carry a persistence recommendation without a wire bump.
- *     Today: cloud never returns it, the daemon never persists from a gateway
- *     verdict.
+ *   - `daemonPromptVersion` may identify the local judge prompt revision.
+ *   - `suggestedRule` is reserved in the verdict shape. Today the judge
+ *     never returns it and the daemon never persists from a gateway verdict.
  */
 
 import type { ProposedRule } from './ask-policy.js';
@@ -61,7 +33,7 @@ export interface CloudClassifyRequest {
   /**
    * Daemon-rendered conversation context. Contains "## Recent User
    * Instructions" + "## Recent Conversation" sections built by the
-   * conversation renderer. Cloud forwards it into the prompt as-is.
+   * conversation renderer. The LLM judge receives it in the user message.
    */
   conversationContext: string;
   agentId?: string;
@@ -75,43 +47,36 @@ export interface CloudClassifyRequest {
 }
 
 /**
- * What the gateway hands back. Verdict is mapped from the cloud
- * `verdict: 'allow' | 'confirm' | 'block'` plus a synthesized `timeout`
- * variant the HTTP client emits on network/timeout failure (fail-safe to
- * ask-user).
+ * What the gateway hands back. `allow` runs the tool; `confirm`, `block`,
+ * and `timeout` all become ask in the facade, with `reasonLocalized` shown
+ * as Why on the permission card.
  */
 export interface CloudClassifyVerdict {
   kind: 'allow' | 'confirm' | 'block' | 'timeout';
-  /** Localized rationale from the cloud, or a daemon-local fallback on timeout. */
+  /** Judge rationale, or a local fallback when the judge is missing or fails. */
   reasonLocalized: string;
 
   /**
-   * Forward-compatible: when the cloud endpoint adds a `suggested_rule`
-   * field, the HTTP client surfaces it here. Today always undefined — the
-   * cloud never returns it and the daemon never persists from a gateway
-   * verdict.
+   * Forward-compatible persistence hint. Today always undefined — the judge
+   * never returns it and the daemon never persists from a gateway verdict.
    */
   suggestedRule?: ProposedRule;
 
-  /** Telemetry — server-side request id, response time. Optional. */
+  /** Telemetry — request id, response time. Optional. */
   serverRequestId?: string;
   durationMs?: number;
 
   /**
-   * Telemetry — model identifier reported by the gateway (e.g.
-   * `cloud:gemini-flash`) or `cloud:unavailable` when the client falls back
-   * to timeout. The cloud-classify wire always returned this; the field is
-   * optional so daemons that log it can keep doing so without a wire
-   * renegotiation.
+   * Telemetry — judge identifier (for example `judge:deepseek-chat`) or
+   * `judge:unconfigured` when no judge is set.
    */
   model?: string;
 }
 
 /**
- * The injection seam. local-runtime provides `HttpCloudGatewayClient`; tests
- * provide `InMemoryCloudGatewayClient`; offline / BYO-key daemons can inject a
- * no-op that always returns `{ kind: 'timeout', ... }` to force the ask-user
- * path.
+ * The injection seam. local-runtime provides `LlmJudgeGatewayClient`; tests
+ * provide `InMemoryCloudGatewayClient`; an unconfigured or failed judge
+ * returns `{ kind: 'timeout', ... }` so auto mode asks the user.
  */
 export interface CloudGatewayClient {
   classify(req: CloudClassifyRequest): Promise<CloudClassifyVerdict>;

@@ -2865,6 +2865,8 @@ describe("createTuiApp", () => {
     await app.submit("/settings");
     const fullscreenSettings = app.interaction.current();
     expect(app.tui.getFocusedComponent()).toBe(fullscreenSettings);
+    expect(app.surfaceHost.render(80).join("\n")).toContain("Settings");
+    terminal.input?.("\r");
     expect(app.surfaceHost.render(80).join("\n")).toContain(
       "TUI mode · Regular",
     );
@@ -2890,6 +2892,8 @@ describe("createTuiApp", () => {
     await app.submit("/settings");
     const regularSettings = app.interaction.current();
     expect(app.tui.getFocusedComponent()).toBe(regularSettings);
+    expect(app.surfaceHost.render(80).join("\n")).toContain("Settings");
+    terminal.input?.("\r");
     expect(app.surfaceHost.render(80).join("\n")).toContain(
       "TUI mode · Fullscreen",
     );
@@ -5478,13 +5482,13 @@ describe("createTuiApp", () => {
   });
 
 
-  it('describes neutral Auto as local checks without changing the permission mode', async () => {
+  it('describes Auto as local rules plus the LLM judge without changing the permission mode', async () => {
     vi.stubEnv('TALOS_NEUTRAL_RUNTIME', '1');
     const { TuiPermissionModePicker } = await import('../../src/tui/features/interaction/permission-mode-picker.js');
     try {
       const onSelect = vi.fn();
       const picker = new TuiPermissionModePicker('auto', onSelect, vi.fn());
-      expect(stripAnsi(picker.render(100).join('\n'))).toContain('Local checks; confirm uncertain actions');
+      expect(stripAnsi(picker.render(100).join('\n'))).toContain('/settings LLM judge');
       expect(onSelect).not.toHaveBeenCalled();
       picker.handleInput('\r');
       expect(onSelect).toHaveBeenCalledExactlyOnceWith('auto');

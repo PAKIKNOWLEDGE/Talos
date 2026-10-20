@@ -10,13 +10,12 @@
  *     structured CommandIntent / ExecutionPlan contract.
  *   - HARD/SOFT dangerous-pattern registries in `classifier/dangerous-patterns.ts`
  *     consumed internally by the tool checkers.
- *   - `cloud-classify-client.ts` — utility for hosts to know whether to call
- *     the cloud gateway (`shouldUseCloudClassify`) and to resolve the API URL.
+ *   - `cloud-classify-client.ts` — `shouldUseCloudClassify` (always true;
+ *     MiniMax mavis permission/check is removed).
  *   - `reason-format.ts` — localized DecisionReason formatter shared by
- *     decision callers (facade, future cloud-runtime).
- *   - `cloud-gateway.ts` / `http-cloud-gateway-client.ts` /
- *     `conversation-renderer.ts` / `ask-policy.ts` — the cloud-gateway decision
- *     path the facade routes `auto` mode through.
+ *     decision callers (facade, TUI ask cards).
+ *   - `cloud-gateway.ts` / `conversation-renderer.ts` / `ask-policy.ts` —
+ *     the auto-mode LLM judge seam the facade routes `auto` through.
  *
  * Hosts must call `configurePermissionHost(...)` once at startup to wire the
  * concrete ports declared in `host-ports.ts`. Cross-cutting helpers (logger,
@@ -141,8 +140,7 @@ export type {
 // ── Cloud gateway gating ──
 export { shouldUseCloudClassify } from './classifier/cloud-classify-client.js';
 
-// ── Default cloud-gateway classifier budget. `HttpCloudGatewayClient` uses
-//    this as its per-call timeout default.
+// ── Default auto-mode LLM judge budget.
 export const AUTO_CLASSIFIER_TIMEOUT_MS_DEFAULT = 60_000;
 
 // ── Host-port surface (consumed by hosts to wire concrete deps) ──
@@ -189,7 +187,5 @@ export type {
   CloudClassifyRequest,
   CloudClassifyVerdict,
 } from './cloud-gateway.js';
-export { HttpCloudGatewayClient } from './http-cloud-gateway-client.js';
-export type { HttpCloudGatewayClientOptions } from './http-cloud-gateway-client.js';
 export { InMemoryCloudGatewayClient } from './in-memory-cloud-gateway-client.js';
 export type { InMemoryCloudGatewayClientOptions } from './in-memory-cloud-gateway-client.js';

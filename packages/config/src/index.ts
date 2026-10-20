@@ -239,9 +239,30 @@ export {
 export type { ConfigFileErrorCode, LoadConfigFromFileOptions } from './file-loader.js';
 export type {
   PermissionConfig,
+  PermissionJudgeApi,
+  PermissionJudgeConfig,
+  PermissionJudgeSource,
   PermissionPolicyOwner,
   PermissionStorageWriteVersion,
 } from './permission-config.js';
+export { parsePermissionJudgeConfig } from './permission-config.js';
+export {
+  buildPermissionJudgeChatRequest,
+  parsePermissionJudgeDecision,
+  permissionJudgeView,
+  readPermissionJudgeResponseText,
+  resolvePermissionJudgeCredentials,
+  testPermissionJudgeCredentials,
+} from './permission-judge.js';
+export type {
+  PermissionJudgeDecision,
+  PermissionJudgeView,
+  ResolvedPermissionJudge,
+} from './permission-judge.js';
+export {
+  PermissionJudgeConfigError,
+  writePermissionJudgeConfig,
+} from './permission-judge-write.js';
 export type {
   ProviderAuthMode,
   ProviderAuthModeSource,

@@ -579,6 +579,11 @@ export class TuiFeatureFlow {
     this.options.surface.show(manager);
   }
 
+  async listReusableJudgeModels(): Promise<readonly TuiModel[]> {
+    const sessionId = this.options.controller.snapshot().session?.sessionId;
+    return this.options.runtime.listModels(sessionId);
+  }
+
   async showModelPicker(query: string): Promise<void> {
     if (this.isStopped()) return;
     this.closeModelPicker();

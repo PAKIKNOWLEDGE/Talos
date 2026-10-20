@@ -368,7 +368,8 @@ const COMMAND_SOURCES: readonly TuiCommandSource[] = [
   },
   {
     name: 'settings',
-    description: 'Configure the Talos terminal interface',
+    aliases: ['options', '选项'],
+    description: 'Configure terminal appearance and the auto-mode LLM judge',
     category: 'Application',
   },
   {

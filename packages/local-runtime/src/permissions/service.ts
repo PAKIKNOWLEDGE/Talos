@@ -6,11 +6,8 @@
  *     `PermissionEngine` as checker registry and explicit rollback, plus the
  *     `evaluateBashStatic` / `decideUnknownToolPathCapabilities` primitives —
  *     see `permission/tools/`)
- *   - `HttpCloudGatewayClient` hitting the
- *     `POST /mavis/api/v1/permission/check` endpoint (the cloud side is a
- *     gemini-flash gateway that owns the classifier prompt)
- *   - `renderConversationContext` for the cloud gateway's
- *     `conversation_context` payload
+ *   - `LlmJudgeGatewayClient` calling the user-configured judge model
+ *   - `renderConversationContext` for the judge's context payload
  *
  * Facade surface:
  *   - `checkPermission(params): Promise<{behavior, reason, requestId?, ruleContents?, …}>`
@@ -26,8 +23,7 @@
  *   - PermissionMode (`default` / `auto` / `bypassPermissions`); the facade
  *     maps these internally to an `AskForApproval` policy.
  *
- * Region / build-env / managed-auth wiring goes through `configurePermissionHost`
- * so the HttpCloudGatewayClient's region routing + Bearer token resolver work.
+ * Region / build-env wiring still goes through `configurePermissionHost`.
  */
 
 import path from 'node:path';
@@ -161,7 +157,7 @@ export function createLocalPermissionService(
       resolvePrompt: (name: string) => resolvePermissionPrompt(deps.configGetter(), name),
     },
     logger: permissionHostLogger,
-    // No stage-2 local LLM injection — the cloud gateway is the only LLM path.
+    // Auto-mode LLM judging is the host-injected `LlmJudgeGatewayClient`.
   });
 
   const service = new LocalPermissionFacade({
@@ -238,6 +234,9 @@ function toRuntimeConfig(local: LocalRuntimeConfig): Config {
         local.permission?.userConfirmationEnabled ??
         getConfig().permission?.userConfirmationEnabled ??
         true,
+      ...(local.permission?.judge ?? getConfig().permission?.judge
+        ? { judge: local.permission?.judge ?? getConfig().permission?.judge }
+        : {}),
     },
     beta: { ...(local.beta ?? {}), promptOverride: local.beta?.promptOverride ?? false },
     provider: local.provider,

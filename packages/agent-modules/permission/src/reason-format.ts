@@ -259,9 +259,15 @@ const AUTO_CLASSIFIER_CONFIRM_PREFIX: Record<Lang, string> = {
 };
 
 const AUTO_CLASSIFIER_TIMEOUT_TEMPLATE: Record<Lang, (suffix: string) => string> = {
-  en: (suffix) => `⚠️ Auto classifier timed out${suffix}; asking user to confirm.`,
-  zh: (suffix) => `⚠️ 自动 classifier 超时${suffix}，请用户手动确认。`,
+  en: (suffix) =>
+    `⚠️ Auto classifier timed out${timeoutSuffixGap(suffix, ': ')}${suffix}; asking user to confirm.`,
+  zh: (suffix) =>
+    `⚠️ 自动 classifier 超时${timeoutSuffixGap(suffix, '：')}${suffix}，请用户手动确认。`,
 };
+
+function timeoutSuffixGap(suffix: string, sep: string): string {
+  return suffix === '' || /^\s/.test(suffix) ? '' : sep;
+}
 
 export function formatAutoClassifierReason(
   verdict: 'allow' | 'block' | 'confirm' | 'timeout',

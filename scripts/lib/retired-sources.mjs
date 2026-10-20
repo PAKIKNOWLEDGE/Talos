@@ -9,6 +9,7 @@
 export const retiredSourceRoots = [
   "packages/agent-modules/team/",
   "packages/agent-modules/permission/src/confirmation-gateway-client.ts",
+  "packages/agent-modules/permission/src/http-cloud-gateway-client.ts",
   "packages/tui/src/auth/identity.ts",
   "packages/local-runtime/src/messages/queue-serialization.ts",
   "packages/local-runtime/src/workspace-indexing/",

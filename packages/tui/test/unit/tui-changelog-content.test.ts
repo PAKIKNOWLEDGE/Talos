@@ -23,20 +23,20 @@ describe('Talos welcome changelog', () => {
     expect(entries.join('\n')).not.toContain('Stale upstream note');
   });
 
-  it('reads the packaged English notes for 0.1.5', () => {
+  it('reads the packaged English notes for 0.1.6', () => {
     const source = readPackagedTuiChangelog('en-US');
     expect(source).toBeTruthy();
-    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.5');
+    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.6');
     expect(entries.length).toBeGreaterThanOrEqual(3);
-    expect(entries.join('\n')).toContain('opening screen');
+    expect(entries.join('\n')).toContain('LLM judge');
     expect(entries.join('\n')).not.toContain('mcode plugin');
   });
 
-  it('reads the packaged Chinese notes for 0.1.5', () => {
+  it('reads the packaged Chinese notes for 0.1.6', () => {
     const source = readPackagedTuiChangelog('zh-CN');
     expect(source).toBeTruthy();
-    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.5');
+    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.6');
     expect(entries.length).toBeGreaterThanOrEqual(3);
-    expect(entries.join('\n')).toContain('开屏');
+    expect(entries.join('\n')).toContain('LLM 裁判');
   });
 });

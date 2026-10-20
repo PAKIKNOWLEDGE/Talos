@@ -1657,6 +1657,10 @@ export class TuiCommandFlow {
         this.options.surface.close(picker);
         if (this.settingsPicker === picker) this.settingsPicker = undefined;
       },
+      {
+        listReusableModels: () => this.options.featureFlow.listReusableJudgeModels(),
+      },
+      this.options.onChanged,
     );
     this.settingsPicker = picker;
     this.options.surface.show(picker);

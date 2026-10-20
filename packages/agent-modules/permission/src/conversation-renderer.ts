@@ -1,9 +1,8 @@
 /**
- * Conversation-context renderer for the cloud gateway.
+ * Conversation-context renderer for the auto-mode LLM judge.
  *
- * The cloud endpoint `POST /mavis/api/v1/permission/check` expects a
- * pre-rendered text block in its `conversation_context` field; the rendering
- * algorithm must match what the server-side prompt expects byte-for-byte.
+ * `LlmJudgeGatewayClient` includes this pre-rendered block in the judge
+ * user message so the model can see recent user instructions.
  *
  * Output shape:
  *
@@ -21,8 +20,7 @@
  *
  * Section presence: each section appears only when its source list is
  * non-empty AND has at least one renderable entry. Leading "\n\n" is
- * preserved at the start of the whole block (the cloud prompt template puts
- * the action block first).
+ * preserved at the start of the whole block.
  */
 
 import type { AgentMessageProtocol } from '@mavis/agent-core/protocol/agent-message';
