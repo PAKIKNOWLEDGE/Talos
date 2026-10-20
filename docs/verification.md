@@ -248,3 +248,18 @@ Scope: ACP `session/delete` with `sessionCapabilities.delete`, detach-if-attache
 - **Git:** `feat/acp-session-delete` fast-forwarded to `main`; version bump via `release/v0.1.3` merged to `main` (`gh pr create` failed on token permissions; merged with git).
 - **npm:** `@pakiknowledge/tal0s-code@0.1.3` published from tarball built at `v0.1.3` (local path per [releasing.md](releasing.md)).
 - **GitHub Release:** [v0.1.3](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.3) with `.tar.gz` + `.sha256`.
+
+## Auto LLM permission judge (0.1.6)
+
+Scope: replace MiniMax `POST /mavis/api/v1/permission/check` with a user-configured LLM judge (`/settings`, aliases `/options` `/选项`). Local PermissionEngine first; Claude HARD/SOFT policy; judge refusal and failures become ask with Why. Thinking-model empty `content` is read from reasoning. Auto `web_fetch` policy asks go through the judge.
+
+### Verification
+
+- Focused Vitest: permission-judge config, LLM judge client, local-permission-facade (including Auto `web_fetch`), TUI judge settings, packaged changelog 0.1.6 notes.
+- `pnpm verify --profile windows` **PASS** at `06f5598` (~80s): 10 gates on win32. Skipped typecheck/capabilities/status/smoke/BYOK/policy/sandbox/package (not in the Windows contract).
+- Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-21 — **release: proceed** (no P0).
+- Live probes are owner-run on a disposable workspace; unit tests do not call a live model.
+
+### Delivery
+
+Recorded after tag `v0.1.6` and npm publish.
