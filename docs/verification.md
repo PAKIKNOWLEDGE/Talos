@@ -260,6 +260,8 @@ Scope: replace MiniMax `POST /mavis/api/v1/permission/check` with a user-configu
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-21 — **release: proceed** (no P0).
 - Live probes are owner-run on a disposable workspace; unit tests do not call a live model.
 
-### Delivery
+### Delivery (2026-10-21)
 
-Recorded after tag `v0.1.6` and npm publish.
+- **Git:** `feat/auto-llm-judge` fast-forwarded to `main` (`gh pr create` failed on token permissions; merged with git). Version commit `320c5d4`, tag `v0.1.6`.
+- **npm:** `@pakiknowledge/tal0s-code@0.1.6` published from the tarball built at that tag (local path per [releasing.md](releasing.md)). Registry processing may take a few minutes.
+- **GitHub Release:** [v0.1.6](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.6) with `.tar.gz` + `.sha256`.
