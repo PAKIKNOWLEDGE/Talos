@@ -261,6 +261,32 @@ describe('TuiActivityLine', () => {
     }
   });
 
+  it('animates a non-bobbing Collapsal spinner without painting terminal backgrounds', () => {
+    vi.useFakeTimers();
+    try {
+      const component = new TuiActivityLine(
+        { phase: 'running', runId: 'turn-1', startedAtMs: 8_000 },
+        {
+          animate: true,
+          now: () => 10_000,
+          chalk: createTuiChalk({ isTTY: true, noColor: false }),
+          skin: 'collapsal',
+        },
+      );
+
+      const first = component.render(80).join('\n');
+      vi.advanceTimersByTime(80);
+      const second = component.render(80).join('\n');
+
+      expect(stripAnsi(first)).toContain('⣾ Running 2s');
+      expect(stripAnsi(second)).toContain('⣽ Running 2s');
+      expect(first).not.toContain('\u001B[48;2;');
+      component.dispose();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('releases the animation timer when idle', () => {
     vi.useFakeTimers();
     try {

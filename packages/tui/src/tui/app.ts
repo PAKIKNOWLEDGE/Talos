@@ -78,9 +78,11 @@ export function createTuiApp(options: CreateTuiAppOptions): TuiApp {
     createTuiChatControllerComposition(options);
   const transcript = new TranscriptStore();
   const transcriptVisibility = new TranscriptVisibilityProjection(transcript);
+  const skin = options.skin ?? 'classic';
   const transcriptView = new TranscriptView(transcriptVisibility, {
-    displayModes: new TranscriptPresentationController(),
+    displayModes: new TranscriptPresentationController(skin),
     workspaceDir: options.workspaceDir,
+    skin,
   });
   const editor = createEditor(tui, workspaceRoots, options.runtime);
   let draftLifecycle: TuiDraftLifecycle | undefined;
@@ -628,6 +630,8 @@ export function createTuiApp(options: CreateTuiAppOptions): TuiApp {
     surfaceHost,
     showTasks: () => delegationFlow.showTasks(),
     persistTuiMode: options.persistTuiMode,
+    skin: options.skin,
+    persistTuiSkin: options.persistTuiSkin,
     showStatusLine: () =>
       showTuiStatusLineSetup({
         statusLine: status,

@@ -1,6 +1,8 @@
 import { visibleWidth } from '../../rendering/text.js';
+import { DEFAULT_TUI_SKIN, type TuiSkin } from '../../skin.js';
 import { tuiChalk as chalk, tuiColors as colors } from '../../theme/runtime.js';
 import { centerToWidth } from '../frame.js';
+import { collapsalWelcomeArt } from './collapsal-art.js';
 import {
   TALOS_TERMINAL_ASCII_WORDMARK,
   TALOS_TERMINAL_EMBLEM,
@@ -8,7 +10,11 @@ import {
   TALOS_WELCOME_DESIGN,
 } from './design.js';
 
-export function renderTuiWelcomeHero(width: number): string[] {
+export function renderTuiWelcomeHero(width: number, skin: TuiSkin = DEFAULT_TUI_SKIN): string[] {
+  return skin === 'collapsal' ? renderCollapsalHero(width) : renderClassicHero(width);
+}
+
+function renderClassicHero(width: number): string[] {
   const { fullMinWidth, mediumMinWidth, microMinWidth, fallbackTitle } = TALOS_WELCOME_DESIGN.hero;
   const emblem =
     width >= fullMinWidth
@@ -39,6 +45,15 @@ export function renderTuiWelcomeHero(width: number): string[] {
     const canvasLine = line + ' '.repeat(Math.max(0, sourceWidth - visibleWidth(line)));
     const color = index < wordmarkRowCount ? wordmarkGradient[index] : colors.warning;
     return centerToWidth(chalk.bold.hex(color)(canvasLine), width);
+  });
+}
+
+function renderCollapsalHero(width: number): string[] {
+  const source = collapsalWelcomeArt(width);
+  const sourceWidth = Math.max(...source.map((line) => visibleWidth(line)));
+  return source.map((line) => {
+    const canvasLine = line + ' '.repeat(Math.max(0, sourceWidth - visibleWidth(line)));
+    return centerToWidth(chalk.bold.hex(colors.brand)(canvasLine), width);
   });
 }
 

@@ -452,6 +452,71 @@ const TALOS: TuiThemeDefinition = Object.freeze({
   ),
 });
 
+/**
+ * Collapsal chrome: white emphasis, gray hierarchy, color only for success /
+ * warning / error. Intended with the Collapsal skin; `/theme` can still override.
+ */
+const COLLAPSAL: TuiThemeDefinition = Object.freeze({
+  id: 'collapsal',
+  label: 'Collapsal',
+  description: 'White emphasis and gray hierarchy',
+  source: 'builtin',
+  dark: palette(
+    'collapsal',
+    'dark',
+    {
+      brand: '#F2F2F2',
+      wordmarkHighlight: '#FFFFFF',
+      wordmarkShadow: '#C8C8C8',
+      signal: '#F2F2F2',
+      orbit: '#D4D4D4',
+      accent: '#F2F2F2',
+      markdownHeading: '#E8E8E8',
+      markdownCode: '#A6E3A1',
+      markdownLink: '#D8D8D8',
+      userMessageBg: '#161616',
+      diffAddedBg: '#1A2A1C',
+      diffRemovedBg: '#2A1A1A',
+      text: '#E8E8E8',
+      muted: '#A8A8A8',
+      dim: '#737373',
+      border: '#2A2A2A',
+      line: '#8A8A8A',
+      success: '#78D66E',
+      warning: '#E0B84A',
+      error: '#F07070',
+    },
+    CATPPUCCIN_SYNTAX_TONES.dark,
+  ),
+  light: palette(
+    'collapsal',
+    'light',
+    {
+      brand: '#1A1A1A',
+      wordmarkHighlight: '#111111',
+      wordmarkShadow: '#3A3A3A',
+      signal: '#1A1A1A',
+      orbit: '#333333',
+      accent: '#1A1A1A',
+      markdownHeading: '#1A1A1A',
+      markdownCode: '#1F7A3D',
+      markdownLink: '#222222',
+      userMessageBg: '#F4F4F4',
+      diffAddedBg: '#E2F3E6',
+      diffRemovedBg: '#FBE6E7',
+      text: '#1A1A1A',
+      muted: '#5A5A5A',
+      dim: '#7A7A7A',
+      border: '#E4E4E4',
+      line: '#6A6A6A',
+      success: '#0F7033',
+      warning: '#835A00',
+      error: '#B5202E',
+    },
+    CATPPUCCIN_SYNTAX_TONES.light,
+  ),
+});
+
 export const DEFAULT_THEME_ID = 'talos';
 
 /**
@@ -472,6 +537,7 @@ export const BUILT_IN_THEMES: readonly TuiThemeDefinition[] = Object.freeze([
   MIDNIGHT,
   GRAPHITE,
   AURORA,
+  COLLAPSAL,
 ]);
 
 export function builtinTheme(id: string): TuiThemeDefinition | undefined {

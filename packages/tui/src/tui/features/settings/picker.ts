@@ -2,6 +2,13 @@ import { getConfig, permissionJudgeView } from '@mavis/config';
 import { getKeybindings, type TuiMode } from '../../engine/public.js';
 import type { Component } from '../../rendering/component.js';
 import { truncateToWidth, visibleWidth } from '../../rendering/text.js';
+import {
+  TUI_SKIN_DESCRIPTIONS,
+  TUI_SKIN_LABELS,
+  TUI_SKINS,
+  parseTuiSkin,
+  type TuiSkin,
+} from '../../skin.js';
 import { tuiChalk as chalk, tuiColors as colors } from '../../theme/runtime.js';
 import {
   questionnaireFrameContentWidth,
@@ -16,12 +23,22 @@ const TUI_MODE_DESCRIPTIONS: Record<TuiMode, string> = {
   fullscreen: 'Keeps Talos in a fixed viewport with in-app scrolling.',
 };
 
-type SettingsPage = 'menu' | 'terminal' | 'judge';
+const SETTINGS_MENU_ITEMS = ['terminal', 'interface', 'judge'] as const;
+type SettingsMenuItem = (typeof SETTINGS_MENU_ITEMS)[number];
+type SettingsPage = 'menu' | SettingsMenuItem;
+
+export interface TuiSettingsInterfaceOptions {
+  readonly currentSkin?: TuiSkin;
+  readonly onSkinChange?: (skin: TuiSkin) => boolean;
+}
 
 export class TuiSettingsPicker implements Component {
   private page: SettingsPage = 'menu';
   private menuIndex = 0;
   private terminalIndex: number;
+  private interfaceIndex: number;
+  private currentSkin: TuiSkin;
+  private readonly onSkinChange?: (skin: TuiSkin) => boolean;
   private judgePage: TuiJudgeSettings | undefined;
 
   constructor(
@@ -30,8 +47,12 @@ export class TuiSettingsPicker implements Component {
     private readonly onClose: () => void,
     private readonly judgePort?: TuiJudgeSettingsPort,
     private readonly requestRender: () => void = () => undefined,
+    interfaceOptions: TuiSettingsInterfaceOptions = {},
   ) {
     this.terminalIndex = Math.max(0, TUI_MODES.indexOf(currentMode));
+    this.currentSkin = parseTuiSkin(interfaceOptions.currentSkin);
+    this.interfaceIndex = Math.max(0, TUI_SKINS.indexOf(this.currentSkin));
+    this.onSkinChange = interfaceOptions.onSkinChange;
   }
 
   handleInput(data: string): void {
@@ -44,18 +65,27 @@ export class TuiSettingsPicker implements Component {
       this.handleTerminalInput(data, keybindings);
       return;
     }
+    if (this.page === 'interface') {
+      this.handleInterfaceInput(data, keybindings);
+      return;
+    }
     if (keybindings.matches(data, 'tui.select.up')) {
-      this.menuIndex = this.menuIndex === 0 ? 1 : 0;
+      this.menuIndex =
+        this.menuIndex === 0 ? SETTINGS_MENU_ITEMS.length - 1 : this.menuIndex - 1;
       return;
     }
     if (keybindings.matches(data, 'tui.select.down')) {
-      this.menuIndex = (this.menuIndex + 1) % 2;
+      this.menuIndex = (this.menuIndex + 1) % SETTINGS_MENU_ITEMS.length;
       return;
     }
     if (keybindings.matches(data, 'tui.select.confirm')) {
-      if (this.menuIndex === 0) {
+      const selected = SETTINGS_MENU_ITEMS[this.menuIndex];
+      if (selected === 'terminal') {
         this.page = 'terminal';
         this.terminalIndex = Math.max(0, TUI_MODES.indexOf(this.currentMode));
+      } else if (selected === 'interface') {
+        this.page = 'interface';
+        this.interfaceIndex = Math.max(0, TUI_SKINS.indexOf(this.currentSkin));
       } else {
         this.openJudge();
       }
@@ -71,6 +101,7 @@ export class TuiSettingsPicker implements Component {
   render(width: number): string[] {
     if (this.page === 'judge' && this.judgePage) return this.judgePage.render(width);
     if (this.page === 'terminal') return this.renderTerminal(width);
+    if (this.page === 'interface') return this.renderInterface(width);
     return this.renderMenu(width);
   }
 
@@ -120,6 +151,36 @@ export class TuiSettingsPicker implements Component {
     if (keybindings.matches(data, 'tui.select.cancel')) this.page = 'menu';
   }
 
+  private handleInterfaceInput(
+    data: string,
+    keybindings: ReturnType<typeof getKeybindings>,
+  ): void {
+    if (keybindings.matches(data, 'tui.select.up')) {
+      this.interfaceIndex =
+        this.interfaceIndex === 0 ? TUI_SKINS.length - 1 : this.interfaceIndex - 1;
+      return;
+    }
+    if (keybindings.matches(data, 'tui.select.down')) {
+      this.interfaceIndex = (this.interfaceIndex + 1) % TUI_SKINS.length;
+      return;
+    }
+    if (keybindings.matches(data, 'tui.select.confirm')) {
+      const selectedSkin = TUI_SKINS[this.interfaceIndex];
+      if (!selectedSkin || selectedSkin === this.currentSkin) {
+        this.onClose();
+        return;
+      }
+      if (this.onSkinChange?.(selectedSkin) !== false) {
+        this.currentSkin = selectedSkin;
+        this.onClose();
+      } else {
+        this.interfaceIndex = TUI_SKINS.indexOf(this.currentSkin);
+      }
+      return;
+    }
+    if (keybindings.matches(data, 'tui.select.cancel')) this.page = 'menu';
+  }
+
   private renderMenu(width: number): string[] {
     const safeWidth = Math.max(0, Math.floor(width));
     if (safeWidth === 0) return [];
@@ -127,6 +188,7 @@ export class TuiSettingsPicker implements Component {
     const judgeLabel = readJudgeLabel();
     const items = [
       { label: 'Terminal appearance', value: formatTuiMode(this.currentMode) },
+      { label: 'Interface', value: TUI_SKIN_LABELS[this.currentSkin] },
       { label: 'LLM judge', value: judgeLabel },
     ];
     return renderQuestionnaireFrame(
@@ -185,6 +247,42 @@ export class TuiSettingsPicker implements Component {
       'signal',
     );
   }
+
+  private renderInterface(width: number): string[] {
+    const safeWidth = Math.max(0, Math.floor(width));
+    if (safeWidth === 0) return [];
+    const contentWidth = questionnaireFrameContentWidth(safeWidth);
+    const compact = contentWidth < 56;
+    const currentSkin = TUI_SKIN_LABELS[this.currentSkin];
+    return renderQuestionnaireFrame(
+      {
+        title: safeWidth < 42 ? `Settings · ${currentSkin}` : 'Settings',
+        ...(safeWidth >= 42 ? { meta: `Interface · ${currentSkin}` } : {}),
+        body: [
+          chalk.hex(colors.muted)(
+            compact
+              ? 'Skin applies after restart.'
+              : 'Choose a boot-frozen interface. Color themes still change live with /theme.',
+          ),
+          '',
+          ...TUI_SKINS.flatMap((skin, index) =>
+            renderSkin(skin, {
+              active: skin === this.currentSkin,
+              focused: index === this.interfaceIndex,
+              compact,
+              width: contentWidth,
+            }),
+          ),
+        ],
+        footer:
+          safeWidth < 42
+            ? '↑/↓ move · Enter save · Esc back'
+            : '↑/↓ select · Enter save · Esc back',
+      },
+      safeWidth,
+      'signal',
+    );
+  }
 }
 
 function renderMode(
@@ -202,6 +300,32 @@ function renderMode(
   );
   const status = options.active ? chalk.hex(colors.signal)('● current') : '';
   const description = chalk.hex(colors.muted)(TUI_MODE_DESCRIPTIONS[mode]);
+  const heading = `${prefix} ${label}`;
+
+  if (options.compact) {
+    return [
+      fitWithRightMeta(heading, status, options.width),
+      truncateToWidth(`  ${description}`, options.width, ''),
+    ];
+  }
+  return [fitWithRightMeta(`${heading}  ${description}`, status, options.width)];
+}
+
+function renderSkin(
+  skin: TuiSkin,
+  options: {
+    readonly active: boolean;
+    readonly focused: boolean;
+    readonly compact: boolean;
+    readonly width: number;
+  },
+): string[] {
+  const prefix = options.focused ? chalk.bold.hex(colors.signal)('›') : ' ';
+  const label = (options.focused ? chalk.bold.hex(colors.signal) : chalk.hex(colors.text))(
+    TUI_SKIN_LABELS[skin].padEnd(10),
+  );
+  const status = options.active ? chalk.hex(colors.signal)('● current') : '';
+  const description = chalk.hex(colors.muted)(TUI_SKIN_DESCRIPTIONS[skin]);
   const heading = `${prefix} ${label}`;
 
   if (options.compact) {

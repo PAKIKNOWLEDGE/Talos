@@ -653,6 +653,55 @@ describe("visible presentation selector", () => {
     expect(renderTuiWelcomeHero(10).map(stripAnsi).join("\n")).toContain("[] []");
   });
 
+  it("selects Collapsal braille splash by terminal width", () => {
+    const large = renderTuiWelcomeHero(80, "collapsal").map(stripAnsi).join("\n");
+    const medium = renderTuiWelcomeHero(36, "collapsal").map(stripAnsi).join("\n");
+    const small = renderTuiWelcomeHero(24, "collapsal").map(stripAnsi).join("\n");
+
+    expect(large).toContain("⣤⣤⣤⣤⣤⣄⣤⣶⣶⣶⣤⣤⣤⡄");
+    expect(medium).toContain("⣤⣶⣦⣤⣀⣴⣿⠿⠷⠶⠾⠿⠿⠿⣶⣶⣆");
+    expect(small).toContain("⣴⣦⣄⣴⡿⠷⠾⠿⠿⣶⡆");
+    expect(large).not.toContain("████████╗");
+    expect(renderTuiWelcomeHero(10, "collapsal").map(stripAnsi).join("\n")).toContain("Talos");
+  });
+
+  it("renders a two-column Collapsal welcome frame instead of Field notes", () => {
+    const shell = {
+      version: "1.2.3",
+      workspace: "/home/u/proj",
+      homeDir: "/home/u",
+      runtimeStatus: "ready" as const,
+      model: "m2.7",
+    };
+    const rendered = stripAnsi(
+      new TuiWelcome(shell, undefined, { skin: "collapsal" }).render(80).join("\n"),
+    );
+
+    expect(rendered).toContain("Talos v1.2.3");
+    expect(rendered).toContain("Welcome");
+    expect(rendered).toContain("Ask Talos anything");
+    expect(rendered).toContain("/init");
+    expect(rendered).toContain("m2.7");
+    expect(rendered).toContain("~/proj");
+    expect(rendered).toContain("┌");
+    expect(rendered).toContain("┴");
+    expect(rendered).not.toContain("Field notes");
+    expect(rendered).not.toContain("████████╗");
+  });
+
+  it("keeps Classic welcome copy on the default skin", () => {
+    const shell = {
+      version: "1.2.3",
+      workspace: "/workspace",
+      runtimeStatus: "ready" as const,
+    };
+    const rendered = stripAnsi(new TuiWelcome(shell).render(80).join("\n"));
+
+    expect(rendered).toContain("Field notes");
+    expect(rendered).toContain("TALOS");
+    expect(rendered).not.toContain("Ask Talos anything");
+  });
+
   it("does not infer readiness from a model label while account state is unknown", () => {
     for (const account of [
       undefined,

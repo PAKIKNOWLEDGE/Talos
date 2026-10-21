@@ -36,6 +36,11 @@ import {
   tuiStreamingMarkdownTheme as streamingMarkdownTheme,
 } from '../theme/runtime.js';
 import { highlightTuiShellCommand } from '../theme/shell-command.js';
+import {
+  collapsalStatusDiamond,
+  DEFAULT_TUI_SKIN,
+  type TuiSkin,
+} from '../skin.js';
 import { renderShellBlock } from './shell-block.js';
 
 const ASSISTANT_ANCHOR_WIDTH = 2;
@@ -88,6 +93,7 @@ export class TranscriptView implements Component {
 
   private readonly displayModes: TranscriptDisplayModeResolver;
   private readonly workspaceDir: string;
+  private readonly skin: TuiSkin;
 
   constructor(
     private readonly cells:
@@ -100,10 +106,12 @@ export class TranscriptView implements Component {
       maxProjectedCells?: number;
       displayModes?: TranscriptDisplayModeResolver;
       workspaceDir?: string;
+      skin?: TuiSkin;
     } = {},
   ) {
-    this.displayModes = options.displayModes ?? new TranscriptPresentationController();
+    this.displayModes = options.displayModes ?? new TranscriptPresentationController(options.skin);
     this.workspaceDir = options.workspaceDir ?? process.cwd();
+    this.skin = options.skin ?? DEFAULT_TUI_SKIN;
     this.projectionWindow = new TranscriptProjectionWindow(
       options.maxInitialTurns ?? 30,
       options.maxCellsPerTurn ?? 120,
@@ -147,7 +155,7 @@ export class TranscriptView implements Component {
     }
 
     const projection = this.projectionWindow.project(sourceCells);
-    const units = createRenderUnits(projection.cells);
+    const units = createRenderUnits(projection.cells, this.skin);
     const unitSignatures = units.map((unit) => renderUnitSignature(unit, source));
     const frameSignature = `${presentationRevision}\u001C${
       projection.hiddenTurns
@@ -251,8 +259,12 @@ export class TranscriptView implements Component {
       (unit.cell.kind === 'assistant' || unit.cell.kind === 'assistant-preamble')
         ? this.renderAssistant(unit.cell, width)
         : unit.kind === 'read-group'
-          ? renderReadGroup(unit.cells, width, connectedToNext, (cell) =>
-              this.resolveDisplayMode(cell),
+          ? renderReadGroup(
+              unit.cells,
+              width,
+              connectedToNext,
+              (cell) => this.resolveDisplayMode(cell),
+              this.skin,
             )
           : renderCell(
               unit.cell,
@@ -260,6 +272,7 @@ export class TranscriptView implements Component {
               connectedToNext,
               (cell) => this.resolveDisplayMode(cell),
               this.workspaceDir,
+              this.skin,
             );
     const rendered = content;
     this.unitCache.set(key, {
@@ -372,12 +385,15 @@ function isMutableCell(cell: TranscriptCell): boolean {
   return cell.status === 'pending' || cell.status === 'running' || cell.status === 'blocked';
 }
 
-function createRenderUnits(cells: readonly TranscriptCell[]): TranscriptRenderUnit[] {
+function createRenderUnits(
+  cells: readonly TranscriptCell[],
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
+): TranscriptRenderUnit[] {
   const units: TranscriptRenderUnit[] = [];
   let index = 0;
   while (index < cells.length) {
     const cell = cells[index];
-    if (!cell || !isReadToolCell(cell)) {
+    if (!cell || !isGroupableToolCell(cell, skin)) {
       if (cell) units.push({ kind: 'cell', cell });
       index += 1;
       continue;
@@ -387,7 +403,9 @@ function createRenderUnits(cells: readonly TranscriptCell[]): TranscriptRenderUn
     let cursor = index + 1;
     while (cursor < cells.length) {
       const next = cells[cursor];
-      if (!next || !isReadToolCell(next) || !isSameExecutionTurn(cell, next)) break;
+      if (!next || !isGroupableToolCell(next, skin) || !isSameExecutionTurn(cell, next)) {
+        break;
+      }
       group.push(next);
       cursor += 1;
     }
@@ -403,21 +421,15 @@ function renderReadGroup(
   width: number,
   connectedToNext: boolean,
   resolveDisplayMode: (cell: TranscriptCell) => ReturnType<typeof resolveTranscriptCellDisplayMode>,
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
 ): string[] {
   const entries = groupedToolEntries(cells);
   const running = entries.filter(
     ({ cell }) => cell.status === 'pending' || cell.status === 'running',
   ).length;
   const failed = entries.filter(({ cell }) => cell.status === 'failed').length;
-  const marker =
-    running > 0
-      ? chalk.hex(colors.accent)('•')
-      : failed === entries.length
-        ? chalk.hex(colors.error)('×')
-        : failed > 0
-          ? chalk.hex(colors.warning)('!')
-          : chalk.hex(colors.success)('•');
-  const action = renderGroupAction(cells, running > 0);
+  const marker = renderGroupMarker(running, failed, entries.length, skin);
+  const action = renderGroupAction(cells, running > 0, skin);
   const failure =
     failed === entries.length
       ? chalk.hex(colors.error)(' · failed')
@@ -427,7 +439,7 @@ function renderReadGroup(
   const operationCount = new Set(
     cells.map((cell) => JSON.stringify([normalizeToolName(cell.title), cell.content])),
   ).size;
-  const groupLabel = groupNoun(cells);
+  const groupLabel = groupNoun(cells, skin);
   const noun =
     operationCount === 1
       ? groupLabel === 'searches'
@@ -479,7 +491,7 @@ function renderReadGroup(
                 cell.detail,
                 width,
                 detailRail,
-                previewLineLimit(cell),
+                previewLineLimit(cell, skin),
                 undefined,
                 cell.status === 'succeeded' ? 'head' : 'tail',
               )),
@@ -504,6 +516,7 @@ function renderCell(
   connectedToNext: boolean,
   resolveDisplayMode: (cell: TranscriptCell) => ReturnType<typeof resolveTranscriptCellDisplayMode>,
   workspaceDir: string,
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
 ): string[] {
   if (cell.kind === 'shell') return renderShellBlock(cell, width);
   if (cell.kind === 'user') {
@@ -555,7 +568,12 @@ function renderCell(
   if (cell.kind === 'compaction') {
     const running = cell.status === 'pending' || cell.status === 'running';
     const failed = cell.status === 'failed';
-    const marker = failed ? chalk.hex(colors.error)('×') : chalk.hex(colors.accent)('•');
+    const marker =
+      skin === 'collapsal'
+        ? renderCollapsalDiamond(running ? 'running' : failed ? 'failed' : 'succeeded')
+        : failed
+          ? chalk.hex(colors.error)('×')
+          : chalk.hex(colors.accent)('•');
     const label = chalk.bold.hex(failed ? colors.error : colors.muted)(
       cell.title ??
         (running
@@ -591,10 +609,17 @@ function renderCell(
   if (cell.kind === 'thinking') {
     const running = cell.status === 'pending' || cell.status === 'running';
     const failed = cell.status === 'failed';
-    const marker = failed ? chalk.hex(colors.error)('×') : chalk.hex(colors.accent)('•');
+    const marker =
+      skin === 'collapsal'
+        ? renderCollapsalDiamond(running ? 'running' : failed ? 'failed' : 'succeeded')
+        : failed
+          ? chalk.hex(colors.error)('×')
+          : chalk.hex(colors.accent)('•');
     const label = running
       ? chalk.bold.hex(colors.muted)('Thinking…')
-      : chalk.bold.hex(failed ? colors.error : colors.muted)(formatThinkingSummary(cell));
+      : chalk.bold.hex(failed ? colors.error : colors.muted)(
+          skin === 'collapsal' ? 'Thought' : formatThinkingSummary(cell),
+        );
     const lines = renderToolRow(connectedToNext ? '├' : '└', `${marker} ${label}`, width);
     const displayMode = resolveDisplayMode(cell);
     if (displayMode === 'collapsed') return lines;
@@ -627,12 +652,7 @@ function renderCell(
 
   if (cell.kind === 'tool') {
     const definition = resolveTranscriptToolDefinition(cell.title);
-    const marker =
-      cell.status === 'failed'
-        ? chalk.hex(colors.error)('×')
-        : chalk.hex(cell.status === 'succeeded' ? colors.success : colors.accent)(
-            cell.status === 'succeeded' && definition?.succeededMarker === 'check' ? '✓' : '•',
-          );
+    const marker = renderToolMarker(cell, definition, skin);
     const displayMode = resolveDisplayMode(cell);
     const detailPrefix = connectedToNext ? '│   ' : '    ';
     const evidence = presentTranscriptToolEvidence(cell, definition, {
@@ -669,7 +689,7 @@ function renderCell(
       lines.push(
         ...renderTuiStructuredPreview(cell.structuredPreview, width, {
           prefix: connectedToNext ? '│ ' : '  ',
-          maxBodyLines: displayMode === 'expanded' ? 30 : 3,
+          maxBodyLines: structuredPreviewLineLimit(cell, displayMode, skin),
         }),
       );
     }
@@ -692,7 +712,7 @@ function renderCell(
               cell.detail,
               width,
               detailPrefix,
-              previewLineLimit(cell),
+              previewLineLimit(cell, skin),
               undefined,
               cell.status === 'succeeded' ? 'head' : 'tail',
             )),
@@ -1085,7 +1105,9 @@ function todoItemPresentation(status: NonNullable<TranscriptCell['todoItems']>[n
   };
 }
 
-function previewLineLimit(cell: TranscriptCell): number {
+function previewLineLimit(cell: TranscriptCell, skin: TuiSkin = DEFAULT_TUI_SKIN): number {
+  const family = resolveTranscriptToolDefinition(cell.title)?.family;
+  if (skin === 'collapsal' && family === 'write') return 10;
   const definition = resolveTranscriptToolDefinition(cell.title);
   if (definition?.previewLines) {
     if (cell.status === 'failed') return definition.previewLines.failed;
@@ -1093,6 +1115,21 @@ function previewLineLimit(cell: TranscriptCell): number {
     return definition.previewLines.running;
   }
   return cell.status === 'failed' ? 8 : 3;
+}
+
+function structuredPreviewLineLimit(
+  cell: TranscriptCell,
+  displayMode: ReturnType<typeof resolveTranscriptCellDisplayMode>,
+  skin: TuiSkin,
+): number {
+  const family = resolveTranscriptToolDefinition(cell.title)?.family;
+  if (skin === 'collapsal' && family === 'edit') {
+    return displayMode === 'expanded' ? 80 : 30;
+  }
+  if (skin === 'collapsal' && family === 'write') {
+    return displayMode === 'expanded' ? 30 : 10;
+  }
+  return displayMode === 'expanded' ? 30 : 3;
 }
 
 function visibleLength(value: string): number {
@@ -1190,7 +1227,22 @@ function isReadToolCell(cell: TranscriptCell): boolean {
   );
 }
 
-function groupNoun(cells: readonly TranscriptCell[]): string {
+function isGroupableToolCell(cell: TranscriptCell, skin: TuiSkin): boolean {
+  if (skin === 'classic') return isReadToolCell(cell);
+  if (cell.kind !== 'tool') return false;
+  const family = resolveTranscriptToolDefinition(cell.title)?.family;
+  return family !== 'edit' && family !== 'write';
+}
+
+function groupNoun(cells: readonly TranscriptCell[], skin: TuiSkin = DEFAULT_TUI_SKIN): string {
+  if (skin === 'collapsal') {
+    const families = toolFamilies(cells);
+    if (families.size > 1) return 'tools';
+    if (families.has('shell')) return 'commands';
+    if (families.has('mcp')) return 'calls';
+    if (families.has('task') || families.has('task-control')) return 'tasks';
+    if (!families.has('read') && !families.has('search')) return 'tools';
+  }
   const titles = new Set(
     cells
       .map((cell) => cell.title?.trim().toLocaleLowerCase().replaceAll('-', '_'))
@@ -1202,7 +1254,20 @@ function groupNoun(cells: readonly TranscriptCell[]): string {
   return 'files';
 }
 
-function renderGroupAction(cells: readonly TranscriptCell[], running: boolean): string {
+function renderGroupAction(
+  cells: readonly TranscriptCell[],
+  running: boolean,
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
+): string {
+  if (skin === 'collapsal') {
+    const families = toolFamilies(cells);
+    if (families.size > 1) return running ? 'Using' : 'Used';
+    if (families.has('shell')) return running ? 'Running' : 'Ran';
+    if (families.has('mcp')) return running ? 'Calling' : 'Called';
+    if (families.has('task') || families.has('task-control')) {
+      return running ? 'Delegating' : 'Delegated';
+    }
+  }
   const titles = new Set(
     cells
       .map((cell) => cell.title?.trim().toLocaleLowerCase().replaceAll('-', '_'))
@@ -1214,6 +1279,57 @@ function renderGroupAction(cells: readonly TranscriptCell[], running: boolean): 
     return running ? 'Listing' : 'Listed';
   }
   return running ? 'Reading' : 'Read';
+}
+
+function toolFamilies(cells: readonly TranscriptCell[]): Set<string> {
+  return new Set(
+    cells.map((cell) => resolveTranscriptToolDefinition(cell.title)?.family ?? 'other'),
+  );
+}
+
+function renderGroupMarker(
+  running: number,
+  failed: number,
+  total: number,
+  skin: TuiSkin,
+): string {
+  if (skin === 'collapsal') {
+    return renderCollapsalDiamond(
+      running > 0 ? 'running' : failed === total ? 'failed' : failed > 0 ? 'mixed' : 'succeeded',
+    );
+  }
+  return running > 0
+    ? chalk.hex(colors.accent)('•')
+    : failed === total
+      ? chalk.hex(colors.error)('×')
+      : failed > 0
+        ? chalk.hex(colors.warning)('!')
+        : chalk.hex(colors.success)('•');
+}
+
+function renderToolMarker(
+  cell: TranscriptCell,
+  definition: ReturnType<typeof resolveTranscriptToolDefinition>,
+  skin: TuiSkin,
+): string {
+  if (skin === 'collapsal') {
+    const running = cell.status === 'pending' || cell.status === 'running';
+    return renderCollapsalDiamond(
+      running ? 'running' : cell.status === 'failed' ? 'failed' : 'succeeded',
+    );
+  }
+  return cell.status === 'failed'
+    ? chalk.hex(colors.error)('×')
+    : chalk.hex(cell.status === 'succeeded' ? colors.success : colors.accent)(
+        cell.status === 'succeeded' && definition?.succeededMarker === 'check' ? '✓' : '•',
+      );
+}
+
+function renderCollapsalDiamond(
+  status: 'running' | 'succeeded' | 'failed' | 'mixed',
+): string {
+  const diamond = collapsalStatusDiamond(status, colors);
+  return chalk.hex(diamond.color)(diamond.glyph);
 }
 
 function readGroupCategories(titles: ReadonlySet<string>): Set<'read' | 'search' | 'list'> {

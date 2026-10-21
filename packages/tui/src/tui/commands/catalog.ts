@@ -369,7 +369,7 @@ const COMMAND_SOURCES: readonly TuiCommandSource[] = [
   {
     name: 'settings',
     aliases: ['options', '选项'],
-    description: 'Configure terminal appearance and the auto-mode LLM judge',
+    description: 'Configure terminal appearance, interface, and the auto-mode LLM judge',
     category: 'Application',
   },
   {

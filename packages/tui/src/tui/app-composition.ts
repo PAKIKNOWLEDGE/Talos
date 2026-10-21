@@ -348,6 +348,7 @@ export function createTuiApplicationWidgets(options: {
             ),
           }
         : {}),
+      ...(options.app.skin ? { skin: options.app.skin } : {}),
     },
   );
   const updateNotice = new TuiUpdateNotice();
@@ -357,6 +358,7 @@ export function createTuiApplicationWidgets(options: {
     {
       requestRender: () => options.tui.requestRender(),
       keybindings: options.app.keybindings,
+      ...(options.app.skin ? { skin: options.app.skin } : {}),
     },
   );
   const imagePreview = new TuiComposerImagePreview({
@@ -375,6 +377,7 @@ export function createTuiApplicationWidgets(options: {
       supportsShiftEnter: () => options.terminal.kittyProtocolActive,
       showTips: options.app.showTips,
       keybindings: options.app.keybindings,
+      ...(options.app.skin ? { skin: options.app.skin } : {}),
     },
   );
   const interaction = new TuiInlinePanelHost();

@@ -1,8 +1,10 @@
+import { DEFAULT_TUI_SKIN, type TuiSkin } from '../../skin.js';
 import {
   resolveTranscriptCellDisplayMode,
   type TranscriptCell,
   type TranscriptDisplayMode,
 } from '../model.js';
+import { resolveTranscriptToolDefinition } from '../tool-definitions.js';
 
 export type TranscriptMainMode = 'compact' | 'detailed';
 
@@ -15,6 +17,11 @@ export interface TranscriptDisplayModeResolver {
 export class TranscriptPresentationController implements TranscriptDisplayModeResolver {
   private mode: TranscriptMainMode = 'compact';
   private revisionValue = 0;
+  private readonly skin: TuiSkin;
+
+  constructor(skin: TuiSkin = DEFAULT_TUI_SKIN) {
+    this.skin = skin;
+  }
 
   get revision(): number {
     return this.revisionValue;
@@ -37,7 +44,14 @@ export class TranscriptPresentationController implements TranscriptDisplayModeRe
 
   resolveMainDisplayMode(cell: TranscriptCell): TranscriptDisplayMode {
     if (this.mode === 'detailed' && isExpandableCell(cell)) return 'expanded';
-    if (cell.kind === 'tool') return 'collapsed';
+    if (cell.kind === 'tool') {
+      if (this.skin === 'collapsal') {
+        const family = resolveTranscriptToolDefinition(cell.title)?.family;
+        if (family === 'edit') return 'expanded';
+        if (family === 'write') return 'preview';
+      }
+      return 'collapsed';
+    }
     if (cell.kind === 'thinking') {
       return cell.status === 'pending' || cell.status === 'running' ? 'preview' : 'collapsed';
     }

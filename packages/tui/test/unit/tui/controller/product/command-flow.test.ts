@@ -36,6 +36,8 @@ function createReadinessCommandFlow(options: {
     setChatMode(mode: "regular" | "fullscreen"): boolean;
   };
   persistTuiMode?: (mode: "regular" | "fullscreen") => void;
+  persistTuiSkin?: (skin: "classic" | "collapsal") => void;
+  requestRestart?: () => void;
   reloadTui?: () => Promise<void>;
   append?: (text: string, kind?: "info" | "warning" | "error") => void;
   queuedCount?: number;
@@ -77,6 +79,8 @@ function createReadinessCommandFlow(options: {
     surfaceHost: (options.surfaceHost ?? {}) as never,
     ...(options.showTasks ? { showTasks: options.showTasks } : {}),
     persistTuiMode: options.persistTuiMode,
+    persistTuiSkin: options.persistTuiSkin,
+    requestRestart: options.requestRestart,
     showStatusLine: options.showStatusLine,
     reloadTui: options.reloadTui,
     queueEnabled: true,
@@ -359,6 +363,40 @@ describe("TuiCommandFlow", () => {
 
     expect(surfaceHost.setChatMode).toHaveBeenCalledWith("fullscreen");
     expect(persistTuiMode).toHaveBeenCalledWith("fullscreen");
+    expect(surface.close).toHaveBeenCalledWith(picker);
+  });
+
+  it("persists Collapsal and hints for a restart instead of spawning one", async () => {
+    const surface = { show: vi.fn(), close: vi.fn(() => true) };
+    const persistTuiSkin = vi.fn();
+    const requestRestart = vi.fn();
+    const setHint = vi.fn();
+    const flow = createReadinessCommandFlow({
+      whenReady: vi.fn(async () => undefined),
+      surface,
+      surfaceHost: {
+        getChatMode: vi.fn(() => "regular" as const),
+        setChatMode: vi.fn(() => true),
+      },
+      persistTuiSkin,
+      requestRestart,
+      setHint,
+    });
+
+    await expect(flow.submit("/settings")).resolves.toBe("consumed");
+    const picker = surface.show.mock.calls.at(-1)?.[0] as {
+      handleInput(data: string): void;
+    };
+    picker.handleInput("\u001b[B");
+    picker.handleInput("\r");
+    picker.handleInput("\u001b[B");
+    picker.handleInput("\r");
+
+    expect(persistTuiSkin).toHaveBeenCalledWith("collapsal");
+    expect(setHint).toHaveBeenCalledWith(
+      "Restart Talos to apply the Collapsal interface.",
+    );
+    expect(requestRestart).not.toHaveBeenCalled();
     expect(surface.close).toHaveBeenCalledWith(picker);
   });
 

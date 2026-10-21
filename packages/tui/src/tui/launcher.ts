@@ -59,10 +59,13 @@ import { getConfig, resetConfig, writeTuiStatusLineSetting, type MavisRegion } f
 import { markLoginRestartHandoff } from './login-restart-handoff.js';
 import {
   readTuiModeSetting,
+  readTuiSkinSetting,
   readTuiThemeSetting,
   writeTuiModeSetting,
+  writeTuiSkinSetting,
   writeTuiThemeSetting,
 } from '../host/tui-settings.js';
+import { defaultThemeIdForTuiSkin, type TuiSkin } from './skin.js';
 import { MCODE_TUI_RESULT_PATH_ENV } from './automation/result-writer.js';
 import { startTuiStartupStatus, type TuiStartupStatus } from './startup-status.js';
 
@@ -80,6 +83,7 @@ export interface LaunchTuiOptions {
   dataDir?: string;
   terminal?: Terminal;
   tuiMode?: TuiMode;
+  skin?: TuiSkin;
   theme?: string;
   externalEditorCommand?: string;
   resumeDraftAfterLogin?: boolean;
@@ -133,6 +137,8 @@ export interface LaunchTuiDependencies {
   createIncidentReporter?: typeof createTuiIncidentReporter;
   readTuiMode?: typeof readTuiModeSetting;
   writeTuiMode?: typeof writeTuiModeSetting;
+  readTuiSkin?: typeof readTuiSkinSetting;
+  writeTuiSkin?: typeof writeTuiSkinSetting;
   readTuiTheme?: typeof readTuiThemeSetting;
   writeTuiTheme?: typeof writeTuiThemeSetting;
   createSharedAuthSession?: typeof createMcodeSharedAuthSession;
@@ -185,7 +191,11 @@ export async function launchTui(
   const dataDir = options.dataDir ?? (await (dependencies.prepareDataDir ?? prepareTuiDataDir)());
   const baseTerminal = options.terminal ?? new ProcessTerminal();
   const tuiMode = options.tuiMode ?? (dependencies.readTuiMode ?? readTuiModeSetting)(dataDir);
-  const theme = options.theme ?? (dependencies.readTuiTheme ?? readTuiThemeSetting)(dataDir);
+  const skin = options.skin ?? (dependencies.readTuiSkin ?? readTuiSkinSetting)(dataDir);
+  const theme =
+    options.theme ??
+    (dependencies.readTuiTheme ?? readTuiThemeSetting)(dataDir) ??
+    defaultThemeIdForTuiSkin(skin);
   const terminalCapabilities = detectProcessTerminalCapabilities();
   const authEnvironment = resolveMcodeAuthEnvironment({
     runtimeRegion: process.env.MAVIS_REGION === 'en' ? 'en' : 'cn',
@@ -410,6 +420,9 @@ export async function launchTui(
         terminal,
         tuiMode,
         persistTuiMode: (mode) => (dependencies.writeTuiMode ?? writeTuiModeSetting)(dataDir, mode),
+        skin,
+        persistTuiSkin: (value) =>
+          (dependencies.writeTuiSkin ?? writeTuiSkinSetting)(dataDir, value),
         ...(theme ? { theme } : {}),
         persistTheme: (value) =>
           (dependencies.writeTuiTheme ?? writeTuiThemeSetting)(dataDir, value),

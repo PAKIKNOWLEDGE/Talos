@@ -34,6 +34,7 @@ import type { MavisRegion } from '@mavis/config';
 import type { McodeAuthPort } from '../../../auth/application.js';
 import { markTuiAuthorizationUrl } from '../../../auth/authorization-url.js';
 import type { TuiMode } from '../../engine/public.js';
+import { DEFAULT_TUI_SKIN, tuiSkinRestartHint, type TuiSkin } from '../../skin.js';
 import type { TuiKeybindingOverride, TuiKeybindingRegistry } from '../../shell/keybindings.js';
 import {
   createTuiExternalTargetOpener,
@@ -93,6 +94,8 @@ export interface TuiCommandFlowOptions {
   readonly showStatusLine?: () => void;
   readonly showTheme?: () => void;
   readonly persistTuiMode?: (mode: TuiMode) => void;
+  readonly skin?: TuiSkin;
+  readonly persistTuiSkin?: (skin: TuiSkin) => void;
   readonly queueEnabled: boolean;
   readonly liveRunId: () => string | undefined;
   readonly runtimeStopping: () => boolean;
@@ -1661,6 +1664,29 @@ export class TuiCommandFlow {
         listReusableModels: () => this.options.featureFlow.listReusableJudgeModels(),
       },
       this.options.onChanged,
+      {
+        currentSkin: this.options.skin ?? DEFAULT_TUI_SKIN,
+        onSkinChange: (skin) => {
+          if (this.settingsPicker !== picker) return false;
+          try {
+            this.options.persistTuiSkin?.(skin);
+          } catch (error) {
+            this.options.append(
+              formatTuiActionFailure(error, {
+                summary: "Couldn't save the interface.",
+                nextStep: 'Check the Talos data directory permissions, then retry /settings.',
+                preservation: `The ${this.options.skin ?? DEFAULT_TUI_SKIN} interface remains selected.`,
+              }),
+              'warning',
+            );
+            this.options.onChanged();
+            return false;
+          }
+          this.options.setHint(tuiSkinRestartHint(skin));
+          this.options.onChanged();
+          return true;
+        },
+      },
     );
     this.settingsPicker = picker;
     this.options.surface.show(picker);

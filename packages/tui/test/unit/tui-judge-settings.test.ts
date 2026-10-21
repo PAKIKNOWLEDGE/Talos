@@ -35,6 +35,8 @@ describe('TuiSettingsPicker LLM judge entry', () => {
     const menu = stripAnsi(picker.render(80).join('\n'));
     expect(menu).toContain('LLM judge');
     expect(menu).toContain('Terminal appearance');
+    expect(menu).toContain('Interface');
+    picker.handleInput('\u001b[B');
     picker.handleInput('\u001b[B');
     picker.handleInput('\r');
     const judge = stripAnsi(picker.render(80).join('\n'));

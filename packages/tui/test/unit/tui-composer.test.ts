@@ -654,4 +654,43 @@ describe("TuiComposer", () => {
       }),
     ).toBe(tuiColors.error);
   });
+
+  it("closes the Collapsal editor in a hairline box on welcome", () => {
+    const composer = new TuiComposer(
+      editor(["──────", "draft", "──────"]),
+      {
+        mode: "message",
+        surface: "welcome",
+      },
+      { skin: "collapsal" },
+    );
+    const lines = composer.render(40).map(stripAnsi);
+    const rendered = lines.join("\n");
+
+    expect(rendered).toContain("┌");
+    expect(rendered).toContain("└");
+    expect(rendered).toContain("draft");
+    expect(rendered).not.toContain("›");
+    expect(rendered).not.toContain("Message");
+    expect(lines[0]?.startsWith("┌")).toBe(true);
+    expect(lines.at(-1)?.startsWith("└")).toBe(true);
+    expect(lines.every((line) => visibleWidth(line) <= 40)).toBe(true);
+  });
+
+  it("keeps the conversation header above the Collapsal editor box", () => {
+    const composer = new TuiComposer(
+      editor(["──────", "draft", "──────"]),
+      {
+        mode: "message",
+        surface: "conversation",
+      },
+      { skin: "collapsal" },
+    );
+    const rendered = stripAnsi(composer.render(64).join("\n"));
+
+    expect(rendered).toContain("Message");
+    expect(rendered).toContain("┌");
+    expect(rendered).toContain("draft");
+    expect(rendered).not.toContain("›");
+  });
 });

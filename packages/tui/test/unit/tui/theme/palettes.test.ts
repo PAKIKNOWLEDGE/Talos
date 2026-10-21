@@ -115,5 +115,6 @@ describe('built-in TUI themes', () => {
     const ids = BUILT_IN_THEMES.map((theme) => theme.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(ids).toContain('talos');
+    expect(ids).toContain('collapsal');
   });
 });

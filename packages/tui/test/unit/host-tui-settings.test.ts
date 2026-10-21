@@ -4,8 +4,10 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import {
   readTuiModeSetting,
+  readTuiSkinSetting,
   readTuiThemeSetting,
   writeTuiModeSetting,
+  writeTuiSkinSetting,
   writeTuiThemeSetting,
 } from '../../src/host/tui-settings.js';
 import { readTuiPresentationConfig } from '../../src/tui/shell/status-line-config.js';
@@ -185,5 +187,43 @@ describe('TUI theme settings', () => {
     ) as Record<string, unknown>;
     expect(document.futureSetting).toBe('keep-me');
     expect(document.theme).toBe('aurora');
+  });
+});
+
+describe('TUI skin settings', () => {
+  it('defaults to classic when no valid skin is saved', async () => {
+    const dataDir = await temporaryDataDir();
+
+    expect(readTuiSkinSetting(dataDir)).toBe('classic');
+    await mkdir(join(dataDir, 'tui'), { recursive: true });
+    await writeFile(join(dataDir, 'tui', 'tui-settings.json'), '{"skin":"grok"}', 'utf8');
+    expect(readTuiSkinSetting(dataDir)).toBe('classic');
+  });
+
+  it('persists Collapsal without dropping theme or TUI mode', async () => {
+    const dataDir = await temporaryDataDir();
+
+    writeTuiThemeSetting(dataDir, 'aurora');
+    writeTuiModeSetting(dataDir, 'fullscreen');
+    writeTuiSkinSetting(dataDir, 'collapsal');
+
+    expect(readTuiSkinSetting(dataDir)).toBe('collapsal');
+    expect(readTuiThemeSetting(dataDir)).toBe('aurora');
+    expect(readTuiModeSetting(dataDir)).toBe('fullscreen');
+    expect(JSON.parse(await readFile(join(dataDir, 'tui', 'tui-settings.json'), 'utf8'))).toEqual({
+      tuiMode: 'fullscreen',
+      theme: 'aurora',
+      skin: 'collapsal',
+    });
+  });
+
+  it('does not drop the skin when the theme is written afterwards', async () => {
+    const dataDir = await temporaryDataDir();
+
+    writeTuiSkinSetting(dataDir, 'collapsal');
+    writeTuiThemeSetting(dataDir, 'midnight');
+
+    expect(readTuiSkinSetting(dataDir)).toBe('collapsal');
+    expect(readTuiThemeSetting(dataDir)).toBe('midnight');
   });
 });

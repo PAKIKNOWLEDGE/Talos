@@ -123,4 +123,36 @@ describe('TranscriptPresentationController', () => {
     expect(presentation.resolveMainDisplayMode(completedTool)).toBe('collapsed');
     expect(presentation.resolveMainDisplayMode(structuredTool)).toBe('collapsed');
   });
+
+  it('keeps Collapsal edit expanded and write previewed while other tools stay collapsed', () => {
+    const presentation = new TranscriptPresentationController('collapsal');
+    const edit = createTranscriptCell({
+      id: 'collapsal-edit',
+      kind: 'tool',
+      status: 'succeeded',
+      title: 'edit',
+      content: '{"path":"src/app.ts"}',
+      createdAtMs: 1,
+    });
+    const write = createTranscriptCell({
+      id: 'collapsal-write',
+      kind: 'tool',
+      status: 'succeeded',
+      title: 'write',
+      content: '{"path":"README.md"}',
+      createdAtMs: 2,
+    });
+    const bash = createTranscriptCell({
+      id: 'collapsal-bash',
+      kind: 'tool',
+      status: 'succeeded',
+      title: 'bash',
+      content: '{"command":"pnpm test"}',
+      createdAtMs: 3,
+    });
+
+    expect(presentation.resolveMainDisplayMode(edit)).toBe('expanded');
+    expect(presentation.resolveMainDisplayMode(write)).toBe('preview');
+    expect(presentation.resolveMainDisplayMode(bash)).toBe('collapsed');
+  });
 });

@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import type { TuiMode } from '../tui/engine/public.js';
+import { parseTuiSkin, type TuiSkin } from '../tui/skin.js';
 
 const TUI_SETTINGS_FILE = path.join('tui', 'tui-settings.json');
 const LEGACY_TUI_SETTINGS_FILE = 'tui-settings.json';
@@ -9,6 +10,7 @@ const THEME_ID = /^[a-z0-9][a-z0-9._-]{0,63}$/iu;
 interface TuiSettingsDocument {
   readonly tuiMode?: unknown;
   readonly theme?: unknown;
+  readonly skin?: unknown;
 }
 
 function settingsPath(dataDir: string): string {
@@ -38,6 +40,7 @@ function writeDocument(dataDir: string, patch: TuiSettingsDocument): void {
   const next: Record<string, unknown> = { ...readDocument(dataDir), ...patch };
   if (next.tuiMode === undefined) delete next.tuiMode;
   if (next.theme === undefined) delete next.theme;
+  if (next.skin === undefined) delete next.skin;
   const temporaryPath = path.join(directory, `.tui-settings.json.${process.pid}.${Date.now()}.tmp`);
   writeFileSync(temporaryPath, `${JSON.stringify(next, null, 2)}\n`, {
     encoding: 'utf8',
@@ -81,4 +84,16 @@ export function writeTuiThemeSetting(dataDir: string, theme: string): void {
     throw new Error(`"${theme}" is not a valid theme id`);
   }
   writeDocument(dataDir, { theme: raw });
+}
+
+/**
+ * Boot-frozen interface skin. Unknown or missing values resolve to Classic so
+ * a corrupt settings file never changes the default layout.
+ */
+export function readTuiSkinSetting(dataDir: string): TuiSkin {
+  return parseTuiSkin(readDocument(dataDir).skin);
+}
+
+export function writeTuiSkinSetting(dataDir: string, skin: TuiSkin): void {
+  writeDocument(dataDir, { skin: parseTuiSkin(skin) });
 }

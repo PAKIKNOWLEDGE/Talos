@@ -11,15 +11,18 @@ import {
 } from '../frame.js';
 import { resolveTuiLayoutPolicy } from '../layout-policy.js';
 import { formatTuiKeybinding, type TuiKeybindingRegistry } from '../keybindings.js';
+import { DEFAULT_TUI_SKIN, type TuiSkin } from '../../skin.js';
 import {
   TALOS_WELCOME_DESIGN,
   TALOS_WELCOME_PASTE_IMAGE_SHORTCUT,
 } from './design.js';
+import { renderCollapsalWelcome } from './collapsal-welcome.js';
 import { renderTuiWelcomeHero } from './hero.js';
 
 export interface TuiWelcomeContent {
   readonly tips?: readonly string[];
   readonly changelogEntries?: readonly string[];
+  readonly skin?: TuiSkin;
 }
 
 export class TuiWelcome implements Component {
@@ -45,14 +48,26 @@ export class TuiWelcome implements Component {
     if (safeWidth < 4) return [fitLine('M', safeWidth)];
 
     const policy = resolveTuiLayoutPolicy(safeWidth);
+    const notice = resolveWelcomeAccountNotice(this.state);
     let frame =
-      policy.welcome === 'compact'
-        ? renderCompactWelcome(this.state, safeWidth, this.keybindings, this.content)
-        : policy.welcome === 'stacked'
-          ? renderStackedWelcome(this.state, safeWidth, this.keybindings, this.content)
-          : renderWideWelcome(this.state, safeWidth, this.keybindings, this.content);
+      resolveWelcomeSkin(this.content) === 'collapsal'
+        ? renderCollapsalWelcome(this.state, safeWidth, {
+            density: policy.welcome === 'compact' ? 'compact' : 'standard',
+            ...(notice ? { notice } : {}),
+          })
+        : policy.welcome === 'compact'
+          ? renderCompactWelcome(this.state, safeWidth, this.keybindings, this.content)
+          : policy.welcome === 'stacked'
+            ? renderStackedWelcome(this.state, safeWidth, this.keybindings, this.content)
+            : renderWideWelcome(this.state, safeWidth, this.keybindings, this.content);
     if (frame.length + 2 > height && policy.welcome !== 'compact') {
-      frame = renderCompactWelcome(this.state, safeWidth, this.keybindings, this.content);
+      frame =
+        resolveWelcomeSkin(this.content) === 'collapsal'
+          ? renderCollapsalWelcome(this.state, safeWidth, {
+              density: 'compact',
+              ...(notice ? { notice } : {}),
+            })
+          : renderCompactWelcome(this.state, safeWidth, this.keybindings, this.content);
     }
     return fitWelcomeHeight(['', ...frame, ''], height);
   }
@@ -83,7 +98,7 @@ function renderWideWelcome(
     3,
   );
   return [
-    ...renderTuiWelcomeHero(width),
+    ...renderTuiWelcomeHero(width, resolveWelcomeSkin(content)),
     '',
     renderWelcomeHeader(state, width),
     ...renderWelcomeAccountNoticeRows(state, width),
@@ -113,7 +128,7 @@ function renderStackedWelcome(
     3,
   );
   return [
-    ...renderTuiWelcomeHero(width),
+    ...renderTuiWelcomeHero(width, resolveWelcomeSkin(content)),
     '',
     renderWelcomeHeader(state, width),
     ...renderWelcomeAccountNoticeRows(state, width),
@@ -145,7 +160,7 @@ function renderCompactWelcome(
     3,
   );
   return [
-    ...renderTuiWelcomeHero(width),
+    ...renderTuiWelcomeHero(width, resolveWelcomeSkin(content)),
     '',
     renderFrameHeader(
       `${chalk.bold.hex(colors.warning)('TALOS')} ${chalk.hex(colors.muted)(`v${state.version}`)}`,
@@ -179,6 +194,10 @@ function resolveWelcomeItems(
   return selected?.length ? selected.slice(0, count) : fallback;
 }
 
+function resolveWelcomeSkin(content: TuiWelcomeContent | undefined): TuiSkin {
+  return content?.skin ?? DEFAULT_TUI_SKIN;
+}
+
 function renderSectionTitle(title: string): string {
   return chalk.bold.hex(colors.brand)(title);
 }
@@ -195,19 +214,20 @@ function resolveWelcomeCopy(value: string, keybindings: TuiKeybindingRegistry | 
 }
 
 function renderWelcomeAccountNoticeRows(state: TuiShellState, width: number): string[] {
-  const message =
-    state.accountStatus === 'Sign in with /login'
-      ? state.accountStatus
-      : state.accountStatus === 'Configure a provider with /provider'
-        ? state.accountStatus
-      : state.accountStatus === 'Connected with warnings'
-        ? 'Check /provider or /status for details.'
-        : state.accountStatus === 'Account unavailable'
-          ? 'Check /status for details.'
-          : undefined;
+  const message = resolveWelcomeAccountNotice(state);
   if (!message) return [];
   const notice = `${chalk.bold.hex(colors.warning)('○')} ${chalk.bold.hex(colors.warning)(message)}`;
   return [renderFrameRow(notice, width)];
+}
+
+function resolveWelcomeAccountNotice(state: TuiShellState): string | undefined {
+  if (state.accountStatus === 'Sign in with /login') return state.accountStatus;
+  if (state.accountStatus === 'Configure a provider with /provider') return state.accountStatus;
+  if (state.accountStatus === 'Connected with warnings') {
+    return 'Check /provider or /status for details.';
+  }
+  if (state.accountStatus === 'Account unavailable') return 'Check /status for details.';
+  return undefined;
 }
 
 function renderActivity(state: TuiShellState): string {

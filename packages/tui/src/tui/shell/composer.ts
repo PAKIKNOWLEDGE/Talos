@@ -10,6 +10,7 @@ import {
   getDefaultTuiKeybindingRegistry,
   type TuiKeybindingRegistry,
 } from './keybindings.js';
+import { DEFAULT_TUI_SKIN, type TuiSkin } from '../skin.js';
 import { TUI_TIPS, selectTuiTipAt, type TuiTip } from './tips.js';
 
 export type TuiComposerMode = 'message' | 'goal' | 'working' | 'follow-up' | 'blocked';
@@ -42,6 +43,7 @@ export interface TuiComposerOptions {
   readonly now?: () => number;
   readonly tips?: readonly TuiTip[];
   readonly keybindings?: TuiKeybindingRegistry;
+  readonly skin?: TuiSkin;
 }
 
 export class TuiComposer implements Component {
@@ -68,6 +70,9 @@ export class TuiComposer implements Component {
         ? undefined
         : sanitizeTerminalText(this.state.placeholder);
     if (safeWidth <= 2) return [...this.editor.render(safeWidth, placeholder)];
+    if ((this.options.skin ?? DEFAULT_TUI_SKIN) === 'collapsal') {
+      return this.renderCollapsal(safeWidth, placeholder);
+    }
 
     const innerWidth = safeWidth - 2;
     const body = this.editor.render(innerWidth, placeholder);
@@ -128,6 +133,47 @@ export class TuiComposer implements Component {
         : []),
     ];
   }
+
+  private renderCollapsal(width: number, placeholder: string | undefined): string[] {
+    const boxWidth = Math.max(4, width);
+    const innerWidth = Math.max(0, boxWidth - 4);
+    const body = this.editor.render(innerWidth, placeholder);
+    const hideHeader = this.state.headerHidden || this.state.surface === 'welcome';
+    const header = hideHeader
+      ? []
+      : [
+          truncateToWidth(
+            `${chalk.hex(colors.dim)('  ')}${renderComposerHeaderWithTip(
+              this.state,
+              Math.max(0, width - 2),
+              this.options.supportsShiftEnter?.() === true,
+              this.options.showTips !== false,
+              this.options.now?.() ?? Date.now(),
+              this.options.tips ?? TUI_TIPS,
+              this.options.keybindings,
+            )}`,
+            width,
+            chalk.hex(colors.dim)('…'),
+          ),
+        ];
+    const contextLabel = this.state.contextLabel?.trim();
+    return [
+      ...(this.options.imagePreview?.render(width) ?? []),
+      ...header,
+      ...wrapCollapsalEditor(body, boxWidth, this.state),
+      ...(contextLabel
+        ? [
+            truncateToWidth(
+              `${chalk.hex(colors.dim)('  ')}${chalk.bold.hex(colors.signal)(
+                sanitizeTerminalText(contextLabel),
+              )}`,
+              width,
+              chalk.hex(colors.dim)('…'),
+            ),
+          ]
+        : []),
+    ];
+  }
 }
 
 function renderComposerHeaderWithTip(
@@ -162,6 +208,69 @@ function renderComposerHeaderWithTip(
     return `${header}${' '.repeat(gap)}${chalk.hex(colors.muted)(text)}`;
   }
   return header;
+}
+
+function wrapCollapsalEditor(
+  body: string[],
+  width: number,
+  state: TuiComposerState,
+): string[] {
+  const paint = (value: string) => chalk.hex(resolveTuiComposerBorderColor(state))(value);
+  const inner = Math.max(0, width - 4);
+  const ellipsis = chalk.hex(colors.muted)('…');
+  const wrapRule = (line: string, kind: 'top' | 'bottom'): string => {
+    const [open, close] = kind === 'top' ? (['┌', '┐'] as const) : (['└', '┘'] as const);
+    const label = stripAnsi(line).match(/[↑↓]\s+\d+\s+more/u);
+    if (label) {
+      const text = `─── ${label[0]} `;
+      const fill = Math.max(0, width - 2 - visibleWidth(text));
+      return paint(`${open}${text}${'─'.repeat(fill)}${close}`);
+    }
+    return paint(`${open}${'─'.repeat(Math.max(0, width - 2))}${close}`);
+  };
+  const wrapContent = (line: string): string => {
+    const fitted = truncateToWidth(line, inner, ellipsis);
+    return `${paint('│')} ${fitted}${' '.repeat(Math.max(0, inner - visibleWidth(fitted)))} ${paint('│')}`;
+  };
+
+  let top = -1;
+  let bottom = -1;
+  for (let index = 0; index < body.length; index++) {
+    if (isEditorBorder(body[index]!)) {
+      if (top < 0) top = index;
+      bottom = index;
+    }
+  }
+
+  if (top < 0 || bottom <= top) {
+    return [wrapRule('', 'top'), ...body.map(wrapContent), wrapRule('', 'bottom')];
+  }
+
+  const out: string[] = [];
+  let highlightedToken = false;
+  for (let index = 0; index < body.length; index++) {
+    const line = body[index]!;
+    if (index === top) {
+      out.push(wrapRule(line, 'top'));
+      continue;
+    }
+    if (index === bottom) {
+      out.push(wrapRule(line, 'bottom'));
+      continue;
+    }
+    if (index > bottom) {
+      out.push(line);
+      continue;
+    }
+    let content = line;
+    if (!highlightedToken) {
+      const decorated = highlightComposerInputToken(content, state);
+      content = decorated.line;
+      highlightedToken = decorated.highlighted;
+    }
+    out.push(wrapContent(content));
+  }
+  return out;
 }
 
 function isEditorBorder(line: string): boolean {

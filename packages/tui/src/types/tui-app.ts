@@ -11,6 +11,7 @@ import type { TuiCommandContribution } from '../tui/commands/catalog.js';
 import type { TuiChatController } from '../tui/controller/chat-controller.js';
 import type { TuiUpdateOptions } from '../tui/controller/product/update-flow.js';
 import type { Terminal, TUI, TuiMode } from '../tui/engine/public.js';
+import type { TuiSkin } from '../tui/skin.js';
 import type { TuiProductFeatures } from '../tui/product-features.js';
 import type { TuiInlinePanelHost, TuiSurfaceHost, TuiSurface } from '../tui/shell/index.js';
 import type { TuiStateStore } from '../tui/state/index.js';
@@ -38,6 +39,9 @@ export interface CreateTuiAppOptions extends TuiUpdateOptions {
   terminalCapabilities?: TerminalCapabilities;
   tuiMode?: TuiMode;
   persistTuiMode?: (mode: TuiMode) => void;
+  /** Boot-frozen interface skin. Defaults to Classic. */
+  skin?: TuiSkin;
+  persistTuiSkin?: (skin: TuiSkin) => void;
   /** Saved theme selection, e.g. `aurora` or `aurora/dark`. */
   theme?: string;
   persistTheme?: (theme: string) => void;

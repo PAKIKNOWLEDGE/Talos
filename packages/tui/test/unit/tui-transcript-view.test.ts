@@ -2206,4 +2206,110 @@ describe('TranscriptView', () => {
     expect(lines.length).toBeGreaterThan(2);
     expect(lines.every((line) => visibleWidth(line) <= 24)).toBe(true);
   });
+
+  it('merges consecutive Collapsal tools except edit and write', () => {
+    const view = new TranscriptView(
+      () => [
+        createTranscriptCell({
+          id: 'bash-1',
+          kind: 'tool',
+          status: 'succeeded',
+          title: 'bash',
+          content: '{"command":"pnpm test"}',
+          detail: 'ok',
+          createdAtMs: 1,
+          turnId: 'turn-1',
+        }),
+        createTranscriptCell({
+          id: 'read-1',
+          kind: 'tool',
+          status: 'succeeded',
+          title: 'read',
+          content: 'src/a.ts',
+          detail: 'READ_BODY_SHOULD_STAY_HIDDEN',
+          createdAtMs: 2,
+          turnId: 'turn-1',
+        }),
+        createTranscriptCell({
+          id: 'edit-1',
+          kind: 'tool',
+          status: 'succeeded',
+          title: 'edit',
+          content: '{"path":"src/a.ts"}',
+          structuredPreview: {
+            schemaVersion: 1,
+            state: 'applied',
+            blocks: [
+              {
+                kind: 'diff',
+                path: 'src/a.ts',
+                diff: '+ export const a = 2;',
+                addedLines: 1,
+                removedLines: 0,
+                truncated: false,
+              },
+            ],
+          },
+          createdAtMs: 3,
+          turnId: 'turn-1',
+        }),
+      ],
+      { skin: 'collapsal' },
+    );
+
+    const compact = stripVTControlCharacters(view.render(64).join('\n'));
+    expect(compact).toContain('Used 2 tools');
+    expect(compact).toContain('◆');
+    expect(compact).not.toContain('READ_BODY_SHOULD_STAY_HIDDEN');
+    expect(compact).toContain('Edited (src/a.ts)');
+    expect(compact).toContain('+ export const a = 2;');
+  });
+
+  it('collapses settled Collapsal thinking to Thought and keeps write to ten lines', () => {
+    const writeLines = Array.from({ length: 14 }, (_, index) => `line ${index + 1}`);
+    const view = new TranscriptView(
+      () => [
+        createTranscriptCell({
+          id: 'thinking-settled',
+          kind: 'thinking',
+          status: 'succeeded',
+          content: 'Inspecting the repository',
+          durationMs: 1_600,
+          createdAtMs: 1,
+          updatedAtMs: 2_600,
+        }),
+        createTranscriptCell({
+          id: 'write-preview',
+          kind: 'tool',
+          status: 'succeeded',
+          title: 'write',
+          content: '{"path":"notes.txt"}',
+          structuredPreview: {
+            schemaVersion: 1,
+            state: 'applied',
+            blocks: [
+              {
+                kind: 'file',
+                path: 'notes.txt',
+                content: writeLines.join('\n'),
+                lineCount: writeLines.length,
+                truncated: false,
+              },
+            ],
+          },
+          createdAtMs: 2,
+        }),
+      ],
+      { skin: 'collapsal' },
+    );
+
+    const compact = stripVTControlCharacters(view.render(64).join('\n'));
+    expect(compact).toContain('Thought');
+    expect(compact).not.toContain('Thought for 1.6s');
+    expect(compact).not.toContain('Inspecting the repository');
+    expect(compact).toContain('Wrote (notes.txt)');
+    expect(compact).toContain('line 10');
+    expect(compact).not.toContain('line 11');
+    expect(compact).toContain('4 lines hidden');
+  });
 });

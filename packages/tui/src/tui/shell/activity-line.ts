@@ -5,6 +5,7 @@ import type { Component } from '../rendering/component.js';
 import { truncateToWidth, visibleWidth } from '../rendering/text.js';
 import { tuiChalk, tuiColors as colors } from '../theme/runtime.js';
 import { sanitizeTerminalText } from '../rendering/terminal-text.js';
+import { COLLAPSAL_SPINNER_FRAMES, DEFAULT_TUI_SKIN, type TuiSkin } from '../skin.js';
 import { formatTuiKeybinding, type TuiKeybindingRegistry } from './keybindings.js';
 
 export type TuiActivityPhase =
@@ -49,10 +50,11 @@ export interface TuiActivityLineOptions {
   requestRender?: () => void;
   chalk?: ChalkInstance;
   keybindings?: TuiKeybindingRegistry;
+  skin?: TuiSkin;
 }
 
 const ACTIVITY_ANIMATION_INTERVAL_MS = 80;
-const ACTIVITY_SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'] as const;
+const CLASSIC_SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'] as const;
 
 /** Elapsed time is noise before the user's natural patience starts to drain. */
 const ELAPSED_REVEAL_AFTER_MS = 1_500;
@@ -87,6 +89,7 @@ export class TuiActivityLine implements Component {
   private readonly requestRender: () => void;
   private readonly chalk: ChalkInstance;
   private readonly keybindings?: TuiKeybindingRegistry;
+  private readonly spinnerFrames: readonly string[];
   private frameIndex = 0;
   private activeStartedAtMs: number | undefined;
   private animationTimer: ReturnType<typeof setInterval> | undefined;
@@ -98,6 +101,10 @@ export class TuiActivityLine implements Component {
     this.requestRender = options.requestRender ?? (() => undefined);
     this.chalk = options.chalk ?? tuiChalk;
     this.keybindings = options.keybindings;
+    this.spinnerFrames =
+      (options.skin ?? DEFAULT_TUI_SKIN) === 'collapsal'
+        ? COLLAPSAL_SPINNER_FRAMES
+        : CLASSIC_SPINNER_FRAMES;
     this.setState(state);
   }
 
@@ -149,7 +156,7 @@ export class TuiActivityLine implements Component {
     const timed = isTimedPhase(this.state.phase);
     const glyph =
       this.animate && timed
-        ? (ACTIVITY_SPINNER_FRAMES[this.frameIndex] ?? ACTIVITY_SPINNER_FRAMES[0])
+        ? (this.spinnerFrames[this.frameIndex] ?? this.spinnerFrames[0])
         : phase.icon;
     const primary = `${this.chalk.hex(colors.dim)('  ')}${this.chalk.bold.hex(phase.color)(
       glyph,
@@ -214,7 +221,7 @@ export class TuiActivityLine implements Component {
   private startAnimation(): void {
     if (this.animationTimer) return;
     this.animationTimer = setInterval(() => {
-      this.frameIndex = (this.frameIndex + 1) % ACTIVITY_SPINNER_FRAMES.length;
+      this.frameIndex = (this.frameIndex + 1) % this.spinnerFrames.length;
       this.requestRender();
     }, ACTIVITY_ANIMATION_INTERVAL_MS);
     this.animationTimer.unref();

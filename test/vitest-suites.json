@@ -97,6 +97,7 @@
       "packages/tui/test/unit/run-coordinator-usage.test.ts",
       "packages/tui/test/unit/run-coordinator.test.ts",
       "packages/tui/test/unit/tui-activity-line.test.ts",
+      "packages/tui/test/unit/tui-skin.test.ts",
       "packages/tui/test/unit/tui-chat-controller.test.ts",
       "packages/tui/test/unit/tui-duration.test.ts",
       "packages/tui/test/unit/tui-engine-local-deltas.test.ts",
