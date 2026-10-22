@@ -39,6 +39,7 @@ Do **not** merge upstream during a Talos feature slice unless the pre-release sc
 | 2026-10-19 | 0.1.5 (welcome notes + selective ports) | Same open set as the 2026-10-19 issue #3 review: #500 #499 #493 #364 #319 #317 #307 #255 #186 #146 #145. Merged since 10-12: #492 #487 #484 #471. | **No** | **release: proceed** — ports are selective; no upstream main merge. |
 | 2026-10-21 | 0.1.6 (Auto LLM permission judge) | Open: #500 #499 tooling/actions deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. No new merged P0 since 0.1.5. | **No** | **release: proceed** — record-only; Talos judge work is local. |
 | 2026-10-22 | 0.1.7 (optional Collapsal TUI skin) | Open: #500 #499 tooling/actions deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. No new merged P0 since 0.1.6. | **No** | **release: proceed** — record-only; Collapsal is local TUI. |
+| 2026-10-23 | 0.1.8 (TUI boot sound) | Same open set as 0.1.7. No new merged P0. | **No** | **release: proceed** — record-only; local TUI audio. |
 
 ## References
 

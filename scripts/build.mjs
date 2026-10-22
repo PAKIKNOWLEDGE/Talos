@@ -114,6 +114,12 @@ copyLocalRuntimeAssets({
   filter: shouldCopyTuiRuntimeResource,
   excludedBuiltinSkillNames: TUI_DISABLED_BUILTIN_SKILL_NAMES,
 });
+const tuiBootSound = path.join(root, "packages/tui/assets/endfield-boot.wav");
+if (!existsSync(tuiBootSound)) {
+  throw new Error("packages/tui/assets/endfield-boot.wav not found");
+}
+mkdirSync(path.join(outdir, "assets", "tui"), { recursive: true });
+cpSync(tuiBootSound, path.join(outdir, "assets/tui/endfield-boot.wav"));
 for (const name of ["configs", "native"])
   cpSync(path.join(root, "packages/tui", name), path.join(outdir, name), {
     recursive: true,

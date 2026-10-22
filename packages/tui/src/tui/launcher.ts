@@ -58,6 +58,10 @@ import { tuiErrorDiagnostic } from '../user-facing-failure.js';
 import { getConfig, resetConfig, writeTuiStatusLineSetting, type MavisRegion } from '@mavis/config';
 import { markLoginRestartHandoff } from './login-restart-handoff.js';
 import {
+  playTuiStartupSound,
+  shouldPlayTuiStartupSound,
+} from '../host/startup-sound.js';
+import {
   readTuiModeSetting,
   readTuiSkinSetting,
   readTuiThemeSetting,
@@ -143,6 +147,7 @@ export interface LaunchTuiDependencies {
   writeTuiTheme?: typeof writeTuiThemeSetting;
   createSharedAuthSession?: typeof createMcodeSharedAuthSession;
   createAuthApplication?: typeof createDefaultMcodeAuthApplication;
+  playStartupSound?: typeof playTuiStartupSound;
 }
 
 export function createConfiguredTuiBusinessTelemetry(options: {
@@ -171,6 +176,12 @@ export async function launchTui(
   }
   if (!options.terminal && (!process.stdin.isTTY || !process.stdout.isTTY)) {
     throw new Error('Talos interactive mode requires a TTY.');
+  }
+  if (
+    shouldPlayTuiStartupSound(options) &&
+    (dependencies.playStartupSound || !isVitestRuntime())
+  ) {
+    (dependencies.playStartupSound ?? playTuiStartupSound)();
   }
 
   // A bare `--model` means "use this model for this invocation", so every

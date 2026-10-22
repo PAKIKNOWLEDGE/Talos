@@ -282,3 +282,14 @@ Scope: boot-frozen Collapsal interface (Classic remains default). `/settings` In
 - **Git:** `feat/collapsal-skin` fast-forwarded to `main` (`gh pr create` still fails on `CreatePullRequest`; merged with git). Version commit `2b5385a`, tag `v0.1.7`.
 - **npm:** `@pakiknowledge/tal0s-code@0.1.7` published from the tarball built at that tag (local path per [releasing.md](releasing.md)). Registry processing may take a few minutes.
 - **GitHub Release:** [v0.1.7](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.7) with `.tar.gz` + `.sha256`.
+
+## Interactive TUI boot sound (0.1.8)
+
+Scope: play a short PCM WAV when the interactive TUI starts. All skins. Skip login-restart. Windows SoundPlayer; Linux pw-play/paplay; fail-silent. Welcome notes copy 0.1.7 Collapsal bullets and add the sound.
+
+### Verification
+
+- Focused Vitest: startup-sound policy/spawn, packaged changelog 0.1.8 notes.
+- Windows: heard from `pnpm start` after non-detached spawn. Linux/NixOS untested (fail-silent).
+- `pnpm verify --profile windows` on the feature revision. Results recorded at merge.
+- Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-23 — **release: proceed** (no P0).
