@@ -9,6 +9,15 @@ Internal refactors, test-only changes, and changes limited to other product surf
 
 Talos release notes are the first heading for that version. Upstream history below keeps older numbers, including another 0.1.4.
 
+## 0.1.7 · 2026-10-22
+
+### Improved
+
+- `/settings` has an Interface page for Classic and Collapsal. Classic stays the default; the chosen skin applies after restart.
+- Collapsal fullscreen pins version, model, and path above the transcript so they stay on screen while you scroll.
+- The Collapsal default footer is cwd | git | model | remaining context, without stars or a permissions badge.
+- Collapsal draws user messages as bubbles with ❯ and a hairline separator after assistant turns.
+
 ## 0.1.6 · 2026-10-21
 
 ### Improved

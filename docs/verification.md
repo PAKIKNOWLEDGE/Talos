@@ -265,3 +265,14 @@ Scope: replace MiniMax `POST /mavis/api/v1/permission/check` with a user-configu
 - **Git:** `feat/auto-llm-judge` fast-forwarded to `main` (`gh pr create` failed on token permissions; merged with git). Version commit `320c5d4`, tag `v0.1.6`.
 - **npm:** `@pakiknowledge/tal0s-code@0.1.6` published from the tarball built at that tag (local path per [releasing.md](releasing.md)). Registry processing may take a few minutes.
 - **GitHub Release:** [v0.1.6](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.6) with `.tar.gz` + `.sha256`.
+
+## Optional Collapsal TUI skin (0.1.7)
+
+Scope: boot-frozen Collapsal interface (Classic remains default). `/settings` Interface page; fullscreen pinned header; slimmer default footer; user bubbles and hairline separators. Color themes still change live with `/theme`.
+
+### Verification
+
+- Focused Vitest: TUI skin settings and picker, status-line Collapsal defaults, composer bubbles, welcome header, transcript presentation, packaged changelog 0.1.7 notes.
+- `pnpm verify --profile windows` on the feature revision (Windows PR contract). Results recorded at merge.
+- Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-22 — **release: proceed** (no P0).
+- Known follow-ups not in this release: Collapsal full-bleed background, splash source image.
