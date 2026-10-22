@@ -293,3 +293,9 @@ Scope: play a short PCM WAV when the interactive TUI starts. All skins. Skip log
 - Windows: heard from `pnpm start` after non-detached spawn. Linux/NixOS untested (fail-silent).
 - `pnpm verify --profile windows` **PASS** at `8e5e7b1` (~123s): 10 gates on win32.
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-23 — **release: proceed** (no P0).
+
+### Delivery (2026-10-23)
+
+- **Git:** `feat/tui-startup-sound` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `c636e57`, tag `v0.1.8`.
+- **npm:** `@pakiknowledge/tal0s-code@0.1.8` published from the tarball built at that tag. Registry processing may take a few minutes.
+- **GitHub Release:** [v0.1.8](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.8) with `.tar.gz` + `.sha256`.
