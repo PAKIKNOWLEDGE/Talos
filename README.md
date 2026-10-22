@@ -4,9 +4,9 @@
 
 [简体中文](README_ZH.md) · [Install](#install) · [Quick start](#quick-start) · [npm](https://www.npmjs.com/package/@pakiknowledge/tal0s-code)
 
-![Talos welcome screen](docs/assets/talos-welcome.png)
+![Talos welcome screen](docs/assets/talos-welcome.jpg)
 
-Talos helps you explore a codebase, edit files, and run commands through a terminal conversation. Its Endfield-inspired interface keeps replies, tool activity, and permission requests close to the work. Choose a provider preset or connect your own compatible endpoint.
+Talos helps you explore a codebase, edit files, and run commands through a terminal conversation. Replies, tool activity, and permission requests stay next to the work. Classic is the default interface; `/settings` can switch to Collapsal after a restart. Choose a provider preset or connect your own compatible endpoint.
 
 ## Install
 
@@ -29,13 +29,13 @@ talos
 
 1. Enter `/provider` to configure a model connection. Select a preset or supply your endpoint, model name, and API key.
 2. Describe your task and the result you want. For example: “Explain how this project starts, then identify the files involved.”
-3. Follow the replies and tool activity. Review permission requests when prompted.
+3. Follow the replies and tool activity. Review permission requests when prompted. In Auto, `/settings` can point those asks at your own LLM judge.
 
 Model usage is billed by your chosen provider.
 
 ![A conversation in Talos](docs/assets/talos-session.png)
 
-*The background image and transparency in these screenshots are terminal settings.*
+*Collapsal welcome (Classic remains the default). The wallpaper and transparency are terminal settings.*
 
 ## Keep working
 
@@ -49,7 +49,7 @@ Model usage is billed by your chosen provider.
 | `talos studio` | Studio JSON-RPC server for Desktop (stdio). |
 | `talos --help` | View command-line options. |
 
-Inside Talos, use `/provider` for model connections, `/sessions` for history, and `/help` for commands and shortcuts.
+Inside Talos, use `/provider` for model connections, `/settings` (also `/options`) for the LLM judge and Classic/Collapsal interface, `/sessions` for history, and `/help` for commands and shortcuts.
 
 ## Your data
 
@@ -59,13 +59,13 @@ Configuration and sessions are stored in `~/.talos` by default (`%USERPROFILE%\.
 
 Run `talos update` or enter `/update` to check for a new version. Talos shows the upgrade command; installation is always manual. To upgrade, run the npm install command above again.
 
-Release notes: [0.1.2](docs/releases/0.1.2.md) · [0.1.1](docs/releases/0.1.1.md).
+Release notes: [0.1.8](docs/releases/0.1.8.md) · [0.1.7](docs/releases/0.1.7.md) · [0.1.6](docs/releases/0.1.6.md) · [0.1.5](docs/releases/0.1.5.md).
 
 ## Release status
 
-Talos **0.1.2** is the current CLI line (`@pakiknowledge/tal0s-code`). Windows x64 release checks passed on the 0.1.x series. Normal model-driven use on NixOS has been confirmed; source verification retains two documented check limitations. See [verification records](docs/verification.md#native-nixos-verification-2026-10-03) and [current status](docs/status.md).
+Talos **0.1.8** is the current CLI line (`@pakiknowledge/tal0s-code`). Recent 0.1.x work includes the Collapsal interface, a user-configured LLM permission judge in Auto, and a short TUI boot sound on Windows. Windows x64 release checks passed on this line. Normal model-driven use on NixOS has been confirmed; Linux boot-sound playback is untested. See [verification records](docs/verification.md) and [current status](docs/status.md).
 
-The desktop GUI lives in the companion repository `T3rra-C0d3-Talos`. Default web search is not included in this release.
+The desktop GUI lives in the companion repository `T3rra-C0d3-Talos`.
 
 If you encounter a problem, [open an issue](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/issues) with your OS, Node.js version, Talos version, and the error message. Remove API keys and private project content before sharing logs.
 
