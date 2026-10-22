@@ -7,6 +7,7 @@ import { formatTuiShortcut } from "../../../../../src/tui/shell/shortcut-labels.
 import { normalizeAccountStatus } from "../../../../../src/runtime/adapters/normalizers.js";
 import { TuiWelcome } from "../../../../../src/tui/shell/welcome/component.js";
 import { renderTuiWelcomeHero } from "../../../../../src/tui/shell/welcome/hero.js";
+import { renderCollapsalSessionHeader } from "../../../../../src/tui/shell/welcome/collapsal-welcome.js";
 import { stripAnsi } from "../../../../../src/tui/rendering/text.js";
 
 const defaultQueueLabel = `${formatTuiShortcut("alt+enter")} queue`;
@@ -700,6 +701,25 @@ describe("visible presentation selector", () => {
     expect(rendered).toContain("Field notes");
     expect(rendered).toContain("TALOS");
     expect(rendered).not.toContain("Ask Talos anything");
+  });
+
+  it("renders a compact Collapsal session header without welcome commands", () => {
+    const shell = {
+      version: "1.2.3",
+      workspace: "/home/u/proj",
+      homeDir: "/home/u",
+      runtimeStatus: "ready" as const,
+      model: "m2.7",
+    };
+    const rendered = stripAnsi(renderCollapsalSessionHeader(shell, 80).join("\n"));
+
+    expect(rendered).toContain("Talos v1.2.3");
+    expect(rendered).toContain("m2.7");
+    expect(rendered).toContain("~/proj");
+    expect(rendered).toContain("┌");
+    expect(rendered).not.toContain("Ask Talos anything");
+    expect(rendered).not.toContain("/init");
+    expect(renderCollapsalSessionHeader(shell, 80)).toHaveLength(3);
   });
 
   it("does not infer readiness from a model label while account state is unknown", () => {

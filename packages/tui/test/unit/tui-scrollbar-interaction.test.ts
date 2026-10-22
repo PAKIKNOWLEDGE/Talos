@@ -423,4 +423,30 @@ describe("Scrollbar interaction boundaries", () => {
     await terminal.waitForRender();
     expect(viewportText(terminal)).toContain("line-62");
   });
+
+  it("pins a Collapsal session header above the fullscreen transcript", async () => {
+    const terminal = new VirtualTerminal(40, 15);
+    const empty = { render: () => [], invalidate() {} };
+    const layout = new TuiChatLayout(terminal, {
+      surface: () => "conversation",
+      transcript: { ...empty, render: () => ["TRANSCRIPT"] },
+      welcome: { ...empty, render: () => ["WELCOME"] },
+      header: { ...empty, render: () => ["PINNED"] },
+      interaction: { ...empty, isActive: () => false },
+      activity: empty,
+      followUp: empty,
+      composer: { render: () => ["composer"], invalidate() {} },
+      status: empty,
+    });
+    const tui = new TuiAltScreen(terminal);
+    screens.push(tui);
+    tui.setLayoutRoot(layout.fullscreenLayoutRoot);
+    tui.start();
+    await terminal.waitForRender();
+    const rendered = viewportText(terminal);
+    expect(rendered).toContain("PINNED");
+    expect(rendered).toContain("TRANSCRIPT");
+    expect(rendered).toContain("composer");
+    expect(rendered).not.toContain("WELCOME");
+  });
 });

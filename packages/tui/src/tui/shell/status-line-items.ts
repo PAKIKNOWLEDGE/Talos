@@ -126,3 +126,12 @@ export const TUI_STATUS_LINE_DEFAULT_ITEMS: readonly TuiStatusLineItem[] = [
   'token-quota',
   'context-remaining',
 ];
+
+/** Unconfigured Collapsal footer: cwd | git | model | context. */
+export const COLLAPSAL_STATUS_LINE_DEFAULT_ITEMS: readonly TuiStatusLineItem[] = [
+  'current-dir',
+  'git-branch',
+  'model-with-reasoning',
+  'context-window',
+  'context-remaining',
+];

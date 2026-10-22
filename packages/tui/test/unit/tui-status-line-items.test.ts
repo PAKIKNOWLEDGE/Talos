@@ -788,5 +788,8 @@ describe('context meter boundaries', () => {
     expect(collapsal).toContain('~/repo');
     expect(collapsal).toContain('m2');
     expect(collapsal).toContain('Context 80% left');
+    expect(collapsal).not.toContain('Permissions');
+    expect(collapsal).not.toContain('Ship status line');
+    expect(collapsal).not.toContain('✦');
   });
 });

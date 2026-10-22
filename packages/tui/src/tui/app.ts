@@ -106,7 +106,7 @@ export function createTuiApp(options: CreateTuiAppOptions): TuiApp {
     editor,
     requestRender: () => (started && !stopped ? tui.requestRender() : undefined),
   });
-  const { welcome, updateNotice, status, activity, composer, interaction, followUp, goal, tasks } =
+  const { welcome, header, updateNotice, status, activity, composer, interaction, followUp, goal, tasks } =
     widgets;
   const appendLocalCell = createLocalTranscriptAppender({
     transcript,
@@ -822,6 +822,7 @@ export function createTuiApp(options: CreateTuiAppOptions): TuiApp {
     sideConversation: () => sessionFlow.sideConversationSnapshot(),
     sessionState: () => stateStore.snapshot(),
     welcome,
+    ...(header ? { header } : {}),
     status,
     activity,
     composer,

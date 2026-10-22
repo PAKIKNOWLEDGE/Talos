@@ -75,6 +75,7 @@ export class TuiChromeFlow {
       /** Multi-Session state kernel, including the background parent Turn. */
       readonly sessionState?: () => Pick<TuiState, 'sessions'>;
       readonly welcome: PresentationSink<'shell'>;
+      readonly header?: PresentationSink<'shell'>;
       readonly status: PresentationSink<'shell'>;
       readonly activity: PresentationSink<'activity'>;
       readonly composer: PresentationSink<'composer'>;
@@ -237,6 +238,7 @@ export class TuiChromeFlow {
     };
     // The welcome header remains visible above the conversation transcript.
     this.options.welcome.setState(shell);
+    this.options.header?.setState(shell);
     this.options.status.setState(shell);
     this.options.activity.setState(this.startupHint ? { phase: 'idle' } : presentation.activity);
     const baseComposer = {

@@ -1,3 +1,4 @@
+import type { Component } from '../../rendering/component.js';
 import { truncateToWidth, visibleWidth } from '../../rendering/text.js';
 import { tuiChalk as chalk, tuiColors as colors } from '../../theme/runtime.js';
 import type { TuiShellState } from '../contracts.js';
@@ -140,4 +141,36 @@ function formatCollapsalWorkspace(workspace: string, homeDir: string | undefined
     return `~${workspace.slice(homeDir.length)}`;
   }
   return workspace;
+}
+
+/** Compact identity frame pinned above the fullscreen transcript. */
+export function renderCollapsalSessionHeader(state: TuiShellState, width: number): string[] {
+  if (width < 20) {
+    return [
+      truncateToWidth(
+        chalk.bold.hex(colors.brand)(`Talos v${state.version}`),
+        width,
+        chalk.hex(colors.muted)('…'),
+      ),
+    ];
+  }
+  const model = chalk.hex(colors.muted)(state.model?.trim() || '—');
+  const cwd = chalk.hex(colors.dim)(formatCollapsalWorkspace(state.workspace, state.homeDir));
+  return [renderHeader(state, width), frameRow(`${model}  ${cwd}`, width), renderBottom(width)];
+}
+
+export class TuiCollapsalSessionHeader implements Component {
+  constructor(private state: TuiShellState) {}
+
+  setState(state: TuiShellState): void {
+    this.state = state;
+  }
+
+  invalidate(): void {}
+
+  render(width: number): string[] {
+    const safeWidth = Number.isFinite(width) ? Math.max(0, Math.floor(width)) : 0;
+    if (safeWidth === 0) return [];
+    return renderCollapsalSessionHeader(this.state, safeWidth);
+  }
 }

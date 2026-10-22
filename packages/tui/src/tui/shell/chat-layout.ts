@@ -17,6 +17,8 @@ export type TuiViewportPolicy = 'document' | 'fixed';
 export interface TuiChatLayoutParts {
   surface: () => TuiSurface;
   welcome: Component;
+  /** Fullscreen-only identity bar. Regular mode keeps welcome in the document. */
+  header?: Component;
   notice?: Component;
   transcript: Component;
   interaction: Component;
@@ -71,6 +73,10 @@ export class TuiChatLayout implements Component {
         this.fullscreenBodyMouseTarget = undefined;
         this.fullscreenBodyMouseRange = undefined;
       },
+    };
+    const headerSection = {
+      render: (width: number) => this.renderPinnedHeader(width),
+      invalidate: () => this.parts.header?.invalidate(),
     };
     const goalSection = this.createFullscreenFooterSection(0);
     const followUpSection = this.createFullscreenFooterSection(1);
@@ -134,6 +140,13 @@ export class TuiChatLayout implements Component {
     });
     this.fullscreenLayoutRoot = new VStack([
       {
+        component: headerSection,
+        basis: 'auto',
+        shrink: 1,
+        minSize: 0,
+        visible: () => this.shouldPinHeader(),
+      },
+      {
         component: this.fullscreenBodyViewport,
         basis: 0,
         grow: 1,
@@ -156,6 +169,7 @@ export class TuiChatLayout implements Component {
 
   invalidate(): void {
     this.parts.welcome.invalidate();
+    this.parts.header?.invalidate();
     this.parts.notice?.invalidate();
     this.parts.transcript.invalidate();
     this.parts.interaction.invalidate();
@@ -356,6 +370,21 @@ export class TuiChatLayout implements Component {
     return isActiveAwareComponent(this.parts.interaction) && this.parts.interaction.isActive();
   }
 
+  private shouldPinHeader(): boolean {
+    return Boolean(this.parts.header) && this.getSurface() === 'conversation';
+  }
+
+  private renderPinnedHeader(width: number): string[] {
+    if (!this.shouldPinHeader() || !this.parts.header) return [];
+    const frame = resolveChatFrame(width, this.terminal.rows);
+    return [...insetLines(this.parts.header.render(frame.contentWidth), frame.horizontalPadding)];
+  }
+
+  private renderScrollingWelcome(renderPart: (component: Component) => string[]): string[] {
+    if (this.shouldPinHeader()) return [];
+    return renderPart(this.parts.welcome);
+  }
+
   private composeFullscreenFrame(width: number): FullscreenChatFrame {
     const frame = resolveChatFrame(width, this.terminal.rows);
     const surface = this.getSurface();
@@ -375,11 +404,14 @@ export class TuiChatLayout implements Component {
     const fullInteraction =
       interactionMounted === false || viewportInteraction ? [] : renderPart(this.parts.interaction);
     const interactionActive = interactionMounted ?? fullInteraction.length > 0;
+    const headerRows = this.shouldPinHeader() ? this.renderPinnedHeader(width).length : 0;
     if (interactionActive) {
       const status = this.renderStatus(
         frame,
         // Keep search, selection, preview/error and actions ahead of custom status blocks.
-        activity.length + (viewportInteraction ? 4 : Math.max(1, fullInteraction.length)),
+        activity.length +
+          headerRows +
+          (viewportInteraction ? 4 : Math.max(1, fullInteraction.length)),
       );
       const interaction = viewportInteraction
         ? insetLines(
@@ -390,7 +422,7 @@ export class TuiChatLayout implements Component {
             frame.horizontalPadding,
           )
         : fullInteraction;
-      const welcome = renderPart(this.parts.welcome);
+      const welcome = this.renderScrollingWelcome(renderPart);
       const transcript = renderPart(this.parts.transcript);
       const welcomeAndTranscript = joinWelcomeAndTranscript(welcome, transcript);
       const prelude = [
@@ -412,11 +444,17 @@ export class TuiChatLayout implements Component {
     const notice = surface === 'welcome' && this.parts.notice ? renderPart(this.parts.notice) : [];
     const status = this.renderStatus(
       frame,
-      goal.length + followUp.length + activity.length + composer.length + notice.length + 1,
+      goal.length +
+        followUp.length +
+        activity.length +
+        composer.length +
+        notice.length +
+        headerRows +
+        1,
     );
     const tasks = this.renderTasks(
       frame,
-      goal.length + followUp.length + activity.length + composer.length + status.length,
+      goal.length + followUp.length + activity.length + composer.length + status.length + headerRows,
       surface === 'conversation' ? 1 : Math.max(1, notice.length + 1),
     );
     if (surface === 'welcome') {
@@ -443,7 +481,7 @@ export class TuiChatLayout implements Component {
       };
     }
 
-    const welcome = renderPart(this.parts.welcome);
+    const welcome = this.renderScrollingWelcome(renderPart);
     const transcript = renderPart(this.parts.transcript);
     return {
       body: [

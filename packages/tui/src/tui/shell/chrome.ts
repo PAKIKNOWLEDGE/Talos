@@ -14,7 +14,11 @@ import { sanitizeTerminalText } from '../rendering/terminal-text.js';
 import type { TuiShellState } from './contracts.js';
 import { fitFirstStatusCandidate, fitLine, normalizeWidth } from './frame.js';
 import { formatTuiAgentStatusLine, type TuiAgentStatus } from './status-protocol.js';
-import { TUI_STATUS_LINE_DEFAULT_ITEMS, type TuiStatusLineItem } from './status-line-items.js';
+import {
+  COLLAPSAL_STATUS_LINE_DEFAULT_ITEMS,
+  TUI_STATUS_LINE_DEFAULT_ITEMS,
+  type TuiStatusLineItem,
+} from './status-line-items.js';
 import { renderCustomStatusLines } from './custom-status-text.js';
 import { DEFAULT_TUI_SKIN, type TuiSkin } from '../skin.js';
 
@@ -82,7 +86,7 @@ export class TuiStatusLine implements Component {
     const safeWidth = normalizeWidth(width);
     if (safeWidth === 0) return [];
 
-    const items = resolveStatusLineItems(this.state);
+    const items = resolveStatusLineItems(this.state, this.skin);
     // A deliberately blanked status line (`tui.statusLine: []`) renders nothing at all — not a
     // pair of empty strings. Returning zero lines lets the frame reclaim the row instead of
     // reserving a blank one.
@@ -129,21 +133,23 @@ export class TuiStatusLine implements Component {
  * default line never leaks the marker regardless of how the bundle was built.
  * When configured, `build-mode` owns the line; an empty list renders nothing.
  */
-function resolveStatusLineItems(state: TuiShellState): readonly TuiStatusLineItem[] {
-  const items = state.statusLineItems ?? TUI_STATUS_LINE_DEFAULT_ITEMS;
-  if (!items.includes('build-mode')) {
-    if (state.statusLineItems !== undefined) {
-      // The opt-in meter replaces the percentage at the meter's configured position.
-      return items.includes('context-meter')
-        ? items.filter((item) => item !== 'context-remaining')
-        : items;
-    }
-    const remaining = contextRemainingPercent(state);
-    return items.filter((item) =>
-      remaining === undefined ? item !== 'context-remaining' : item !== 'context-window',
-    );
+function resolveStatusLineItems(
+  state: TuiShellState,
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
+): readonly TuiStatusLineItem[] {
+  const configured = state.statusLineItems;
+  if (configured?.includes('build-mode')) return ['build-mode'];
+  if (configured !== undefined) {
+    return configured.includes('context-meter')
+      ? configured.filter((item) => item !== 'context-remaining')
+      : configured;
   }
-  return ['build-mode'];
+  const items =
+    skin === 'collapsal' ? COLLAPSAL_STATUS_LINE_DEFAULT_ITEMS : TUI_STATUS_LINE_DEFAULT_ITEMS;
+  const remaining = contextRemainingPercent(state);
+  return items.filter((item) =>
+    remaining === undefined ? item !== 'context-remaining' : item !== 'context-window',
+  );
 }
 
 /**
@@ -419,6 +425,7 @@ function renderStatusIdentity(
     .filter((part): part is string => Boolean(part))
     .map((part) => `${statusDot()}${chalk.hex(colors.muted)(part)}`)
     .join('');
+  if (skin === 'collapsal') return `${chalk.hex(colors.muted)(model)}${detail}`;
   return `${chalk.hex(accent)('✦')} ${chalk.hex(accent)(model)}${detail}`;
 }
 
@@ -496,7 +503,9 @@ function renderGitContext(
   const label =
     density === 'full' ? ref : stripAnsi(truncateToWidth(ref, density === 'minimal' ? 7 : 12));
   const worktree = metadata.isWorktree ? (density === 'full' ? 'worktree' : 'wt') : undefined;
-  return `${chalk.hex(statusAccent(skin))('⎇')} ${chalk.hex(colors.muted)(label)}${
+  const mark =
+    skin === 'collapsal' ? '' : `${chalk.hex(statusAccent(skin))('⎇')} `;
+  return `${mark}${chalk.hex(colors.muted)(label)}${
     worktree ? `${statusDot()}${chalk.hex(colors.muted)(worktree)}` : ''
   }`;
 }
