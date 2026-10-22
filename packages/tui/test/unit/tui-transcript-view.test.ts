@@ -1220,6 +1220,26 @@ describe('TranscriptView', () => {
     }
   });
 
+  it('renders Collapsal user prompts with a ❯ bubble instead of ›', () => {
+    const view = new TranscriptView(
+      () => [
+        createTranscriptCell({
+          id: 'user-bubble',
+          kind: 'user',
+          status: 'succeeded',
+          content: 'Short message',
+          createdAtMs: 1,
+        }),
+      ],
+      { skin: 'collapsal' },
+    );
+
+    const rendered = view.render(24).map(stripVTControlCharacters);
+    expect(rendered).toContain(' ❯ Short message'.padEnd(24));
+    expect(rendered.join('\n')).not.toContain('›');
+    expect(rendered.every((line) => visibleWidth(line) === 24)).toBe(true);
+  });
+
   it('renders structured attachment cards before user text and omits an empty text band', () => {
     const withText = new TranscriptView(() => [
       createTranscriptCell({

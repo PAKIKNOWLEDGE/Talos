@@ -16,6 +16,7 @@ import { fitFirstStatusCandidate, fitLine, normalizeWidth } from './frame.js';
 import { formatTuiAgentStatusLine, type TuiAgentStatus } from './status-protocol.js';
 import { TUI_STATUS_LINE_DEFAULT_ITEMS, type TuiStatusLineItem } from './status-line-items.js';
 import { renderCustomStatusLines } from './custom-status-text.js';
+import { DEFAULT_TUI_SKIN, type TuiSkin } from '../skin.js';
 
 export { type TuiRuntimeStatus, type TuiShellState } from './contracts.js';
 export { TuiWelcome } from './welcome/component.js';
@@ -63,6 +64,7 @@ export class TuiStatusLine implements Component {
   constructor(
     private state: TuiShellState,
     private readonly customStatusConfig?: TuiCustomStatusLineConfig,
+    protected readonly skin: TuiSkin = DEFAULT_TUI_SKIN,
   ) {}
 
   setState(state: TuiShellState): void {
@@ -89,10 +91,10 @@ export class TuiStatusLine implements Component {
     const block = this.customStatusConfig?.display === 'block' && items.includes('custom-command');
     const segments = items
       .filter((item) => !block || item !== 'custom-command')
-      .map((item) => buildStatusSegment(item, this.state, this.customStatusConfig))
+      .map((item) => buildStatusSegment(item, this.state, this.customStatusConfig, this.skin))
       .filter((segment): segment is StatusSegment => segment !== undefined);
 
-    const line = fitStatusSegments(segments, safeWidth);
+    const line = fitStatusSegments(segments, safeWidth, this.skin);
     const originalLines = stripAnsi(line).trim() ? [line] : [];
     const customLines = block
       ? this.renderCustomBlock(safeWidth, height - originalLines.length - 1)
@@ -155,6 +157,7 @@ function buildStatusSegment(
   item: TuiStatusLineItem,
   state: TuiShellState,
   customStatusConfig?: TuiCustomStatusLineConfig,
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
 ): StatusSegment | undefined {
   switch (item) {
     case 'build-mode':
@@ -183,9 +186,9 @@ function buildStatusSegment(
     case 'git-branch':
       return createStatusSegment(
         [
-          renderGitContext(state.workspaceGit),
-          renderGitContext(state.workspaceGit, 'compact'),
-          renderGitContext(state.workspaceGit, 'minimal'),
+          renderGitContext(state.workspaceGit, 'full', skin),
+          renderGitContext(state.workspaceGit, 'compact', skin),
+          renderGitContext(state.workspaceGit, 'minimal', skin),
         ],
         { shrinkPriority: 20, dropPriority: 30 },
       );
@@ -210,14 +213,14 @@ function buildStatusSegment(
     case 'model-with-reasoning':
       return createStatusSegment(
         [
-          renderStatusIdentity(state, 'full'),
-          renderStatusIdentity(state, 'compact'),
-          renderStatusIdentity(state, 'minimal'),
+          renderStatusIdentity(state, 'full', skin),
+          renderStatusIdentity(state, 'compact', skin),
+          renderStatusIdentity(state, 'minimal', skin),
         ],
         { shrinkPriority: 30, dropPriority: 65 },
       );
     case 'model':
-      return createStatusSegment([renderStatusIdentity(state, 'minimal')], {
+      return createStatusSegment([renderStatusIdentity(state, 'minimal', skin)], {
         shrinkPriority: 30,
         dropPriority: 20,
       });
@@ -339,10 +342,17 @@ function createStatusSegment(
   return { variants: visibleVariants, ...priorities };
 }
 
-function fitStatusSegments(segments: readonly StatusSegment[], width: number): string {
+function fitStatusSegments(
+  segments: readonly StatusSegment[],
+  width: number,
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
+): string {
   const active = segments.map((segment) => ({ segment, variant: 0 }));
   const render = () =>
-    joinStatusGroups(active.map(({ segment, variant }) => segment.variants[variant] ?? ''));
+    joinStatusGroups(
+      active.map(({ segment, variant }) => segment.variants[variant] ?? ''),
+      skin,
+    );
 
   while (visibleWidth(render()) > width) {
     const shrinkable = active
@@ -389,8 +399,10 @@ function renderSessionTitle(state: TuiShellState, maxWidth?: number): string {
 function renderStatusIdentity(
   state: TuiShellState,
   density: 'full' | 'compact' | 'minimal',
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
 ): string {
   const model = formatStatusContextLabel(state.model ?? 'no model');
+  const accent = statusAccent(skin);
   const thinking =
     density === 'minimal' || !state.thinking || state.effort
       ? undefined
@@ -407,7 +419,7 @@ function renderStatusIdentity(
     .filter((part): part is string => Boolean(part))
     .map((part) => `${statusDot()}${chalk.hex(colors.muted)(part)}`)
     .join('');
-  return `${chalk.hex(colors.accent)('✦')} ${chalk.hex(colors.accent)(model)}${detail}`;
+  return `${chalk.hex(accent)('✦')} ${chalk.hex(accent)(model)}${detail}`;
 }
 
 function contextWindowTokens(state: TuiShellState): number | undefined {
@@ -477,13 +489,14 @@ function renderSubagentIdentity(state: TuiShellState, compact = false): string {
 function renderGitContext(
   metadata: TuiWorkspaceGitMetadata | undefined,
   density: 'full' | 'compact' | 'minimal' = 'full',
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
 ): string {
   if (!metadata?.isGitRepo) return '';
   const ref = metadata.detached ? 'detached' : metadata.branch || 'unborn';
   const label =
     density === 'full' ? ref : stripAnsi(truncateToWidth(ref, density === 'minimal' ? 7 : 12));
   const worktree = metadata.isWorktree ? (density === 'full' ? 'worktree' : 'wt') : undefined;
-  return `${chalk.hex(colors.accent)('⎇')} ${chalk.hex(colors.muted)(label)}${
+  return `${chalk.hex(statusAccent(skin))('⎇')} ${chalk.hex(colors.muted)(label)}${
     worktree ? `${statusDot()}${chalk.hex(colors.muted)(worktree)}` : ''
   }`;
 }
@@ -567,8 +580,14 @@ function quotaAlertWindow(
   return remaining <= 30 ? { label, compactLabel, remaining } : undefined;
 }
 
-function joinStatusGroups(groups: readonly string[]): string {
-  return groups.filter(Boolean).join(chalk.hex(colors.dim)(' │ '));
+function joinStatusGroups(groups: readonly string[], skin: TuiSkin = DEFAULT_TUI_SKIN): string {
+  const separator =
+    skin === 'collapsal' ? chalk.hex(colors.border)(' | ') : chalk.hex(colors.dim)(' │ ');
+  return groups.filter(Boolean).join(separator);
+}
+
+function statusAccent(skin: TuiSkin): string {
+  return skin === 'collapsal' ? colors.muted : colors.accent;
 }
 
 function statusDot(): string {

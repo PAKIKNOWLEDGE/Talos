@@ -29,7 +29,7 @@ export const TUI_SKIN_LABELS: Record<TuiSkin, string> = {
 export const TUI_SKIN_DESCRIPTIONS: Record<TuiSkin, string> = {
   classic: 'Default Talos layout, welcome art, and tool chrome.',
   collapsal:
-    'Framed welcome, closed editor, compact tool chrome. Applies after restart.',
+    'Framed welcome, closed editor, user bubbles, compact chrome. Applies after restart.',
 };
 
 export function tuiSkinRestartHint(skin: TuiSkin): string {

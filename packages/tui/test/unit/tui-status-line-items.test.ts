@@ -772,4 +772,21 @@ describe('context meter boundaries', () => {
     expect(line).toContain('[V]');
     expect(line).not.toContain('Context');
   });
+
+  it('joins Collapsal status segments with a hairline pipe without changing items', () => {
+    const state = {
+      ...BASE_STATE,
+      contextUsage: { usedTokens: 20, contextWindowTokens: 100 },
+    };
+    const classic = stripAnsi(new TuiStatusLine(state).render(200).join('\n'));
+    const collapsal = stripAnsi(new TuiStatusLine(state, undefined, 'collapsal').render(200).join('\n'));
+
+    expect(classic).toContain(' │ ');
+    expect(classic).not.toContain(' | ');
+    expect(collapsal).toContain(' | ');
+    expect(collapsal).not.toContain(' │ ');
+    expect(collapsal).toContain('~/repo');
+    expect(collapsal).toContain('m2');
+    expect(collapsal).toContain('Context 80% left');
+  });
 });

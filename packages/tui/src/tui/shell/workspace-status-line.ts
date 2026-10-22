@@ -6,6 +6,7 @@ import {
 } from '../../host/custom-status-command.js';
 import type { TuiWorkspaceGitMetadata, TuiWorkspaceGitPort } from '../../runtime/port.js';
 import { TuiStatusLine, type TuiShellState } from './chrome.js';
+import type { TuiSkin } from '../skin.js';
 import {
   parseTuiStatusLineItems,
   TUI_STATUS_LINE_DEFAULT_ITEMS,
@@ -32,6 +33,8 @@ export interface CreateTuiWorkspaceStatusLineOptions {
   customStatusLine?: TuiCustomStatusLineConfig;
   /** Test seam for the custom status command child process. */
   runCustomStatusProcess?: TuiCustomStatusProcessRunner;
+  /** Boot-frozen interface skin. Defaults to Classic. */
+  skin?: TuiSkin;
 }
 
 export function createTuiWorkspaceStatusLine(
@@ -56,6 +59,7 @@ export function createTuiWorkspaceStatusLine(
       ...(options.runCustomStatusProcess
         ? { runCustomStatusProcess: options.runCustomStatusProcess }
         : {}),
+      ...(options.skin ? { skin: options.skin } : {}),
     },
   );
 }
@@ -63,6 +67,7 @@ export function createTuiWorkspaceStatusLine(
 export interface TuiWorkspaceStatusLineCustomStatusOptions {
   readonly customStatusLine?: TuiCustomStatusLineConfig;
   readonly runCustomStatusProcess?: TuiCustomStatusProcessRunner;
+  readonly skin?: TuiSkin;
 }
 
 export class TuiWorkspaceStatusLine extends TuiStatusLine {
@@ -81,7 +86,7 @@ export class TuiWorkspaceStatusLine extends TuiStatusLine {
     private readonly requestRender: () => void,
     private readonly customStatus: TuiWorkspaceStatusLineCustomStatusOptions = {},
   ) {
-    super(initialState, customStatus.customStatusLine);
+    super(initialState, customStatus.customStatusLine, customStatus.skin);
     this.statusLineItems = initialState.statusLineItems;
     this.shellState = initialState;
     this.syncSources();
@@ -110,6 +115,7 @@ export class TuiWorkspaceStatusLine extends TuiStatusLine {
       new TuiStatusLine(
         { ...state, statusLineItems: selection },
         this.customStatus.customStatusLine,
+        this.skin,
       );
     return {
       lines: createLine(items).renderViewport(width, height),

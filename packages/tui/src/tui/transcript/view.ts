@@ -523,7 +523,7 @@ function renderCell(
     return wrapSemanticMessageZone(
       cell.userPresentation === 'pending-steer'
         ? renderPendingSteerMessage(cell, width)
-        : renderUserMessage(cell, width),
+        : renderUserMessage(cell, width, skin),
     );
   }
 
@@ -817,16 +817,22 @@ function sanitizeDelegationLabel(value: string | undefined, fallback: string): s
  * Render the user's own prompt as literal text inside the user band.
  * See `wrapLiteralUserText` for why prompts never go through Markdown.
  */
-function renderUserIntent(content: string, width: number): string[] {
+function renderUserIntent(
+  content: string,
+  width: number,
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
+): string[] {
   const normalizedWidth = Math.max(0, Math.floor(width));
   if (normalizedWidth === 0) return [];
   const verticalPadding = renderUserBandLine('', normalizedWidth);
   const bodyWidth = Math.max(1, normalizedWidth - 4);
   const body = wrapLiteralUserText(content, bodyWidth);
+  const arrow = skin === 'collapsal' ? '❯' : '›';
+  const mark = chalk.bold.hex(colors.signal)(arrow);
   if (body.length === 0) {
     return [
       verticalPadding,
-      renderUserBandLine(` ${chalk.bold.hex(colors.signal)('›')}`, normalizedWidth),
+      renderUserBandLine(` ${mark}`, normalizedWidth),
       verticalPadding,
     ];
   }
@@ -834,7 +840,7 @@ function renderUserIntent(content: string, width: number): string[] {
     verticalPadding,
     ...body.map((line, index) =>
       renderUserBandLine(
-        `${index === 0 ? ` ${chalk.bold.hex(colors.signal)('› ')}` : '   '}${line}`,
+        `${index === 0 ? ` ${mark} ` : '   '}${line}`,
         normalizedWidth,
       ),
     ),
@@ -842,9 +848,13 @@ function renderUserIntent(content: string, width: number): string[] {
   ];
 }
 
-function renderUserMessage(cell: TranscriptCell, width: number): string[] {
+function renderUserMessage(
+  cell: TranscriptCell,
+  width: number,
+  skin: TuiSkin = DEFAULT_TUI_SKIN,
+): string[] {
   const attachments = renderUserAttachments(cell, width);
-  const body = cell.content.trim() ? renderUserIntent(cell.content, width) : [];
+  const body = cell.content.trim() ? renderUserIntent(cell.content, width, skin) : [];
   const rows =
     attachments.length > 0 && body.length > 0
       ? [...attachments, ' ', ...body]
