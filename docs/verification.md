@@ -291,5 +291,5 @@ Scope: play a short PCM WAV when the interactive TUI starts. All skins. Skip log
 
 - Focused Vitest: startup-sound policy/spawn, packaged changelog 0.1.8 notes.
 - Windows: heard from `pnpm start` after non-detached spawn. Linux/NixOS untested (fail-silent).
-- `pnpm verify --profile windows` on the feature revision. Results recorded at merge.
+- `pnpm verify --profile windows` **PASS** at `8e5e7b1` (~123s): 10 gates on win32.
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-23 — **release: proceed** (no P0).
