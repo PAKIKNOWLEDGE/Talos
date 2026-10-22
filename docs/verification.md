@@ -273,6 +273,6 @@ Scope: boot-frozen Collapsal interface (Classic remains default). `/settings` In
 ### Verification
 
 - Focused Vitest: TUI skin settings and picker, status-line Collapsal defaults, composer bubbles, welcome header, transcript presentation, packaged changelog 0.1.7 notes.
-- `pnpm verify --profile windows` on the feature revision (Windows PR contract). Results recorded at merge.
+- `pnpm verify --profile windows` **PASS** at `2c3b3c1` (~104s): 10 gates on win32. Skipped typecheck/capabilities/status/smoke/BYOK/policy/sandbox/package (not in the Windows contract).
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-22 — **release: proceed** (no P0).
 - Known follow-ups not in this release: Collapsal full-bleed background, splash source image.
