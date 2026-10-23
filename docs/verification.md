@@ -324,5 +324,5 @@ Scope: native `web_search` uses Tavily / Exa / DeepSeek from `/settings` → Web
 
 - Focused Vitest: web_search client/config, `/settings` Web search page, packaged changelog 0.1.10 notes.
 - Maintainer verified live TUI `/settings` → Web search.
-- `pnpm verify --profile windows` pending on the feature commit.
+- `pnpm verify --profile windows` **PASS** at `01c1465` (~370s): 10 gates on win32.
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-23 — **release: proceed** (no P0).
