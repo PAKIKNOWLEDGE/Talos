@@ -59,11 +59,11 @@ talos
 
 运行 `talos update` 或在界面中输入 `/update` 检查新版。Talos 会显示升级命令，由你手动安装。再次执行上面的 npm 安装命令即可升级。
 
-更新说明：[0.1.8](docs/releases/0.1.8.md) · [0.1.7](docs/releases/0.1.7.md) · [0.1.6](docs/releases/0.1.6.md) · [0.1.5](docs/releases/0.1.5.md)。
+更新说明：[0.1.9](docs/releases/0.1.9.md) · [0.1.8](docs/releases/0.1.8.md) · [0.1.7](docs/releases/0.1.7.md) · [0.1.6](docs/releases/0.1.6.md)。
 
 ## 发行状态
 
-Talos **0.1.8** 为当前 CLI 发行线（`@pakiknowledge/tal0s-code`）。近期 0.1.x 包括 Collapsal 界面、Auto 下可配置的 LLM 权限裁判，以及 Windows 上的 TUI 启动音。Windows x64 发行检查已通过。NixOS 实际使用已确认；Linux 启动音未测。见[验证记录](docs/verification.md)与[当前状态](docs/status.md)。
+Talos **0.1.9** 为当前 CLI 发行线（`@pakiknowledge/tal0s-code`）。近期 0.1.x 包括 Collapsal 界面（默认底栏会显示 Ask / Auto / Full access）、Auto 下可配置的 LLM 权限裁判，以及 Windows 上的 TUI 启动音。Windows x64 发行检查已通过。NixOS 实际使用已确认；Linux 启动音未测。见[验证记录](docs/verification.md)与[当前状态](docs/status.md)。
 
 桌面 GUI 在配套仓库 `T3rra-C0d3-Talos` 维护。
 

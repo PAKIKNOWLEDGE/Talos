@@ -59,11 +59,11 @@ Configuration and sessions are stored in `~/.talos` by default (`%USERPROFILE%\.
 
 Run `talos update` or enter `/update` to check for a new version. Talos shows the upgrade command; installation is always manual. To upgrade, run the npm install command above again.
 
-Release notes: [0.1.8](docs/releases/0.1.8.md) · [0.1.7](docs/releases/0.1.7.md) · [0.1.6](docs/releases/0.1.6.md) · [0.1.5](docs/releases/0.1.5.md).
+Release notes: [0.1.9](docs/releases/0.1.9.md) · [0.1.8](docs/releases/0.1.8.md) · [0.1.7](docs/releases/0.1.7.md) · [0.1.6](docs/releases/0.1.6.md).
 
 ## Release status
 
-Talos **0.1.8** is the current CLI line (`@pakiknowledge/tal0s-code`). Recent 0.1.x work includes the Collapsal interface, a user-configured LLM permission judge in Auto, and a short TUI boot sound on Windows. Windows x64 release checks passed on this line. Normal model-driven use on NixOS has been confirmed; Linux boot-sound playback is untested. See [verification records](docs/verification.md) and [current status](docs/status.md).
+Talos **0.1.9** is the current CLI line (`@pakiknowledge/tal0s-code`). Recent 0.1.x work includes the Collapsal interface (default footer now shows Ask / Auto / Full access), a user-configured LLM permission judge in Auto, and a short TUI boot sound on Windows. Windows x64 release checks passed on this line. Normal model-driven use on NixOS has been confirmed; Linux boot-sound playback is untested. See [verification records](docs/verification.md) and [current status](docs/status.md).
 
 The desktop GUI lives in the companion repository `T3rra-C0d3-Talos`.
 

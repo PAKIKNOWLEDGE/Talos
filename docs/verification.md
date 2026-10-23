@@ -310,6 +310,8 @@ Scope: unconfigured Collapsal footer shows Ask / Auto / Full access after contex
 - `pnpm verify --profile windows` **PASS** at `2bc1197` (~92s): 10 gates on win32.
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-23 — **release: proceed** (no P0).
 
-### Delivery
+### Delivery (2026-10-23)
 
-- Pending version tag and npm.
+- **Git:** `fix/collapsal-permission-footer` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `24f8f0e`, tag `v0.1.9`.
+- **npm:** `@pakiknowledge/tal0s-code@0.1.9` published from the tarball built at that tag. Registry processing may take a few minutes.
+- **GitHub Release:** [v0.1.9](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.9) with `.tar.gz` + `.sha256`.
