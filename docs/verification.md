@@ -307,9 +307,9 @@ Scope: unconfigured Collapsal footer shows Ask / Auto / Full access after contex
 ### Verification
 
 - Focused Vitest: Collapsal status-line defaults, packaged changelog 0.1.9 notes.
-- `pnpm verify --profile windows` pending on the reviewed feature commit.
+- `pnpm verify --profile windows` **PASS** at `2bc1197` (~92s): 10 gates on win32.
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-23 — **release: proceed** (no P0).
 
 ### Delivery
 
-- Pending version tag and npm after Windows verify.
+- Pending version tag and npm.
