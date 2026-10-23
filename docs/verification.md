@@ -326,3 +326,9 @@ Scope: native `web_search` uses Tavily / Exa / DeepSeek from `/settings` → Web
 - Maintainer verified live TUI `/settings` → Web search.
 - `pnpm verify --profile windows` **PASS** at `01c1465` (~370s): 10 gates on win32.
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-23 — **release: proceed** (no P0).
+
+### Delivery (2026-10-23)
+
+- **Git:** `feat/web-search-providers` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `1e6f6d4`, tag `v0.1.10`.
+- **npm:** `@pakiknowledge/tal0s-code@0.1.10` published from the tarball built at that tag. Registry processing may take a few minutes.
+- **GitHub Release:** [v0.1.10](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.10) with `.tar.gz` + `.sha256`.
