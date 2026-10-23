@@ -9,6 +9,17 @@ Internal refactors, test-only changes, and changes limited to other product surf
 
 Talos release notes are the first heading for that version. Upstream history below keeps older numbers, including another 0.1.4.
 
+## 0.1.9 · 2026-10-23
+
+### Improved
+
+- `/settings` has an Interface page for Classic and Collapsal. Classic stays the default; the chosen skin applies after restart.
+- Collapsal fullscreen pins version, model, and path above the transcript so they stay on screen while you scroll.
+- The Collapsal default footer is cwd | git | model | remaining context | permission. Ask, Auto, and Full access show at the end; PLAN appears only in Plan mode. No stars.
+- Collapsal draws user messages as bubbles with ❯ and a hairline separator after assistant turns.
+- Interactive TUI plays a short boot sound. Classic and Collapsal both play it. Login restart does not play it again.
+- Windows uses the system SoundPlayer. Linux tries pw-play then paplay. A missing player stays silent.
+
 ## 0.1.8 · 2026-10-23
 
 ### Improved

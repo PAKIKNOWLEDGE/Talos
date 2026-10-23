@@ -90,6 +90,8 @@ Without `tui.statusLine`, items render in this order:
 current-dir · session-title · git-branch · review-link · plan-mode · approval-mode · model-with-reasoning · context-window · subagent · token-quota · context-remaining
 ```
 
+Collapsal's unconfigured footer is shorter: `current-dir · git-branch · model-with-reasoning · context-window · context-remaining · plan-mode · approval-mode`. Plan stays silent until you enter `/plan`; permission (Ask / Auto / Full access) always shows at the end.
+
 `build-mode` is **not a default**. Explicitly listing it is the only way to enable the machine-readable protocol; the build type does not matter. It may appear anywhere in the list and takes over the entire line to keep free text out of the strict record. Remove it to disable the protocol.
 
 By default, `context-window` shows capacity before usage is available; `context-remaining` replaces it once a runtime usage snapshot exists. Explicit item lists retain the selected presentation. Session changes clear old data, and refresh failures do not reuse stale values. Context comes from the latest runtime snapshot, not a live per-token counter. `cache-read-ratio` and `context-meter` remain opt-in; `context-meter` renders the same remaining-headroom value and thresholds as `context-remaining` with an added gauge, and takes precedence over `context-remaining` when both are listed, regardless of order. Other items retain their order, and the meter stays at its configured position. It shrinks from eight gauge cells to six, then to `Ctx N%` as space runs out. Narrow terminals prioritize permissions, context warnings, model, and session title. Even the shortest context display retains `Ctx` to distinguish it from `5h` / `W` plan quotas.

@@ -127,11 +127,13 @@ export const TUI_STATUS_LINE_DEFAULT_ITEMS: readonly TuiStatusLineItem[] = [
   'context-remaining',
 ];
 
-/** Unconfigured Collapsal footer: cwd | git | model | context. */
+/** Unconfigured Collapsal footer: cwd | git | model | context | plan | permission. */
 export const COLLAPSAL_STATUS_LINE_DEFAULT_ITEMS: readonly TuiStatusLineItem[] = [
   'current-dir',
   'git-branch',
   'model-with-reasoning',
   'context-window',
   'context-remaining',
+  'plan-mode',
+  'approval-mode',
 ];

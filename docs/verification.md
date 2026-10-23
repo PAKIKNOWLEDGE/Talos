@@ -299,3 +299,17 @@ Scope: play a short PCM WAV when the interactive TUI starts. All skins. Skip log
 - **Git:** `feat/tui-startup-sound` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `c636e57`, tag `v0.1.8`.
 - **npm:** `@pakiknowledge/tal0s-code@0.1.8` published from the tarball built at that tag. Registry processing may take a few minutes.
 - **GitHub Release:** [v0.1.8](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.8) with `.tar.gz` + `.sha256`.
+
+## Collapsal permission footer (0.1.9)
+
+Scope: unconfigured Collapsal footer shows Ask / Auto / Full access after context. PLAN appears only in Plan mode. Classic defaults unchanged. `Alt+M` still cycles permission.
+
+### Verification
+
+- Focused Vitest: Collapsal status-line defaults, packaged changelog 0.1.9 notes.
+- `pnpm verify --profile windows` pending on the reviewed feature commit.
+- Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-23 — **release: proceed** (no P0).
+
+### Delivery
+
+- Pending version tag and npm after Windows verify.

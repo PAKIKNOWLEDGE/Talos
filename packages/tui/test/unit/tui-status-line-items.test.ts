@@ -8,6 +8,7 @@ import { setCapabilityOverrides } from '../../src/tui/engine/public.js';
 import type { TuiShellState } from '../../src/tui/shell/contracts.js';
 import { resolveTuiAgentRef } from '../../src/tui/shell/status-protocol.js';
 import {
+  COLLAPSAL_STATUS_LINE_DEFAULT_ITEMS,
   TUI_STATUS_LINE_DEFAULT_ITEMS,
   parseTuiStatusLineItem,
   parseTuiStatusLineItems,
@@ -773,7 +774,16 @@ describe('context meter boundaries', () => {
     expect(line).not.toContain('Context');
   });
 
-  it('joins Collapsal status segments with a hairline pipe without changing items', () => {
+  it('joins Collapsal status segments with a hairline pipe and keeps permission at the end', () => {
+    expect(COLLAPSAL_STATUS_LINE_DEFAULT_ITEMS).toEqual([
+      'current-dir',
+      'git-branch',
+      'model-with-reasoning',
+      'context-window',
+      'context-remaining',
+      'plan-mode',
+      'approval-mode',
+    ]);
     const state = {
       ...BASE_STATE,
       contextUsage: { usedTokens: 20, contextWindowTokens: 100 },
@@ -788,8 +798,16 @@ describe('context meter boundaries', () => {
     expect(collapsal).toContain('~/repo');
     expect(collapsal).toContain('m2');
     expect(collapsal).toContain('Context 80% left');
-    expect(collapsal).not.toContain('Permissions');
+    expect(collapsal).toContain('Auto');
+    expect(collapsal.indexOf('Context 80% left')).toBeLessThan(collapsal.indexOf('Auto'));
+    expect(collapsal).not.toContain('PLAN');
     expect(collapsal).not.toContain('Ship status line');
     expect(collapsal).not.toContain('✦');
+
+    const inPlan = stripAnsi(
+      new TuiStatusLine({ ...state, planMode: 'plan' }, undefined, 'collapsal').render(200).join('\n'),
+    );
+    expect(inPlan).toContain('PLAN');
+    expect(inPlan.indexOf('PLAN')).toBeLessThan(inPlan.indexOf('Auto'));
   });
 });
