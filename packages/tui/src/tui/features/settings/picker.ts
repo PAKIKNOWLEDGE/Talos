@@ -1,4 +1,4 @@
-import { getConfig, permissionJudgeView } from '@mavis/config';
+import { getConfig, permissionJudgeView, webSearchSettingsView } from '@mavis/config';
 import { getKeybindings, type TuiMode } from '../../engine/public.js';
 import type { Component } from '../../rendering/component.js';
 import { truncateToWidth, visibleWidth } from '../../rendering/text.js';
@@ -15,6 +15,7 @@ import {
   renderQuestionnaireFrame,
 } from '../interaction/decision-frame.js';
 import { TuiJudgeSettings, type TuiJudgeSettingsPort } from './judge-picker.js';
+import { TuiWebSearchSettings } from './web-search-picker.js';
 
 const TUI_MODES = ['regular', 'fullscreen'] as const satisfies readonly TuiMode[];
 
@@ -23,7 +24,7 @@ const TUI_MODE_DESCRIPTIONS: Record<TuiMode, string> = {
   fullscreen: 'Keeps Talos in a fixed viewport with in-app scrolling.',
 };
 
-const SETTINGS_MENU_ITEMS = ['terminal', 'interface', 'judge'] as const;
+const SETTINGS_MENU_ITEMS = ['terminal', 'interface', 'webSearch', 'judge'] as const;
 type SettingsMenuItem = (typeof SETTINGS_MENU_ITEMS)[number];
 type SettingsPage = 'menu' | SettingsMenuItem;
 
@@ -40,6 +41,7 @@ export class TuiSettingsPicker implements Component {
   private currentSkin: TuiSkin;
   private readonly onSkinChange?: (skin: TuiSkin) => boolean;
   private judgePage: TuiJudgeSettings | undefined;
+  private webSearchPage: TuiWebSearchSettings | undefined;
 
   constructor(
     private currentMode: TuiMode,
@@ -59,6 +61,10 @@ export class TuiSettingsPicker implements Component {
     const keybindings = getKeybindings();
     if (this.page === 'judge') {
       this.judgePage?.handleInput(data);
+      return;
+    }
+    if (this.page === 'webSearch') {
+      this.webSearchPage?.handleInput(data);
       return;
     }
     if (this.page === 'terminal') {
@@ -86,6 +92,8 @@ export class TuiSettingsPicker implements Component {
       } else if (selected === 'interface') {
         this.page = 'interface';
         this.interfaceIndex = Math.max(0, TUI_SKINS.indexOf(this.currentSkin));
+      } else if (selected === 'webSearch') {
+        this.openWebSearch();
       } else {
         this.openJudge();
       }
@@ -96,13 +104,27 @@ export class TuiSettingsPicker implements Component {
 
   invalidate(): void {
     this.judgePage?.invalidate();
+    this.webSearchPage?.invalidate();
   }
 
   render(width: number): string[] {
     if (this.page === 'judge' && this.judgePage) return this.judgePage.render(width);
+    if (this.page === 'webSearch' && this.webSearchPage) return this.webSearchPage.render(width);
     if (this.page === 'terminal') return this.renderTerminal(width);
     if (this.page === 'interface') return this.renderInterface(width);
     return this.renderMenu(width);
+  }
+
+  private openWebSearch(): void {
+    this.webSearchPage = new TuiWebSearchSettings(
+      () => {
+        this.page = 'menu';
+        this.webSearchPage = undefined;
+        this.requestRender();
+      },
+      this.requestRender,
+    );
+    this.page = 'webSearch';
   }
 
   private openJudge(): void {
@@ -189,6 +211,7 @@ export class TuiSettingsPicker implements Component {
     const items = [
       { label: 'Terminal appearance', value: formatTuiMode(this.currentMode) },
       { label: 'Interface', value: TUI_SKIN_LABELS[this.currentSkin] },
+      { label: 'Web search', value: readWebSearchLabel() },
       { label: 'LLM judge', value: judgeLabel },
     ];
     return renderQuestionnaireFrame(
@@ -346,6 +369,14 @@ function readJudgeLabel(): string {
     return permissionJudgeView(getConfig()).label;
   } catch {
     return 'Not configured';
+  }
+}
+
+function readWebSearchLabel(): string {
+  try {
+    return webSearchSettingsView(getConfig().webSearch).label;
+  } catch {
+    return 'Auto · no key';
   }
 }
 

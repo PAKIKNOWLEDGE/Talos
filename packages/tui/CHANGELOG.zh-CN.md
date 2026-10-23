@@ -10,6 +10,19 @@ TUI 正式版中用户能直接感知的重要变化。收录范围以 TUI 用�
 
 Talos 的更新说明写在同版本号的第一处标题下。下面的上游历史仍保留旧编号，其中也有一节 0.1.4。
 
+## 0.1.10 · 2026-10-23
+
+### 体验改进
+
+- Web search 改走 Tavily、Exa 或 DeepSeek。`/settings` → Web search 选择后端并保存 API key。Matrix 搜索已去掉。
+- Auto 会用已保存的 key。一个都没配时，工具仍可见，并提示打开 `/settings` → Web search。
+- `/settings` 增加界面页，可选 Classic 或 Collapsal。默认仍是 Classic，换肤后需重启才生效。
+- Collapsal 全屏会把版本、模型和路径钉在对话上方，滚动时不跟着走。
+- Collapsal 默认底栏是 cwd | git | 模型 | 剩余上下文 | 权限。末尾显示 Ask / Auto / Full access；只有进入 Plan 才会出现 PLAN。没有星标。
+- Collapsal 用户消息画成带 ❯ 的气泡，助手回合后用细线分隔。
+- 交互 TUI 启动会播一段短音效。Classic 和 Collapsal 都会播；登录后进程重启那次不重复。
+- Windows 用系统 SoundPlayer。Linux 先试 pw-play 再试 paplay。找不到播放器就静默。
+
 ## 0.1.9 · 2026-10-23
 
 ### 体验改进

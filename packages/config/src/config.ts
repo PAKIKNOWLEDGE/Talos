@@ -74,6 +74,11 @@ import {
   SANDBOX_CONFIG_DEFAULTS,
   type SandboxConfig,
 } from "./sandbox-config.js";
+import {
+  parseWebSearchConfig,
+  WEB_SEARCH_CONFIG_DEFAULTS,
+  type WebSearchConfig,
+} from "./web-search-config.js";
 
 export type { TuiConfig, TuiCustomStatusLineConfig } from "./tui-config.js";
 
@@ -1016,6 +1021,11 @@ export interface Config {
   browser: BrowserConfig;
   /** TUI presentation options, such as the status line item order. */
   tui: TuiConfig;
+  /**
+   * Native `web_search` backends. Default `auto` walks configured credentials
+   * and does not bind MiniMax Matrix or any single vendor.
+   */
+  webSearch: WebSearchConfig;
   /** Anonymous TUI business telemetry. */
   telemetry: TelemetryConfig;
   /** Legacy OpenCode framework adapter tunables. */
@@ -1833,6 +1843,7 @@ const DEFAULTS: Omit<
   // No status line items by default: the TUI picks its build-specific default
   // when `tui.statusLine` is absent.
   tui: {},
+  webSearch: { ...WEB_SEARCH_CONFIG_DEFAULTS },
   telemetry: { enabled: false, metrics: false, diagnostics: false },
   opencode: {
     xdg: {
@@ -2151,6 +2162,7 @@ export function resolveConfigFromRaw(
     cli: parseCliConfig(raw),
     browser: parseBrowserConfig(raw.browser),
     tui: parseTuiConfig(raw),
+    webSearch: parseWebSearchConfig(raw.webSearch),
     telemetry: parseTelemetryConfig(raw.telemetry),
     opencode: parseOpenCodeAdapterConfig(raw, DEFAULTS.opencode),
     contextManagement: parseContextManagementConfig(raw),

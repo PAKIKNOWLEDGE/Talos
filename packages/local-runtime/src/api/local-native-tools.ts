@@ -26,6 +26,7 @@ import {
   type AgentBuiltinMcpToolId,
   type AgentBuiltinSkillId,
   type ResolvedAgentCapabilities,
+  type WebSearchConfig,
 } from "@mavis/config";
 import { resolveFeatureAwareBuiltinSkillNames } from "../agent/feature-owned-skills.js";
 import type { ModuleMetricsReporter } from "../common/metrics.js";
@@ -79,6 +80,7 @@ export function buildLocalNativeRuntimeTools(input: {
   /** Local product gate for native web_search. */
   webSearchEnabled?: boolean;
   webSearchAdapter?: LocalWebSearchAdapter;
+  webSearch?: WebSearchConfig;
   taskAdapter?: LocalTaskAdapter;
   taskAppendAdapter?: LocalTaskAppendAdapter;
   taskControlAdapter?: LocalTaskControlAdapter;
@@ -117,8 +119,11 @@ export function buildLocalNativeRuntimeTools(input: {
     new LocalWebFetchClient({ fetchImpl: input.fetchImpl });
   const webSearchAdapter =
     input.webSearchEnabled === true
-      ? (input.webSearchAdapter ?? (process.env.TALOS_NEUTRAL_RUNTIME === '1'
-          ? undefined : createManagedLocalWebSearchClient(input)))
+      ? (input.webSearchAdapter ??
+          createManagedLocalWebSearchClient({
+            ...(input.fetchImpl ? { fetchImpl: input.fetchImpl } : {}),
+            ...(input.webSearch ? { config: input.webSearch } : {}),
+          }))
       : undefined;
   const builtinSkillNames = resolveFeatureAwareBuiltinSkillNames(capabilities, {
     cuModeActive: input.cuModeActive === true,
@@ -293,6 +298,7 @@ export async function buildLocalTurnToolSources(
     routingContextGetter: input.routingContextGetter,
     fetchImpl: input.fetchImpl,
     webSearchEnabled: input.nativeWebSearchEnabled === true,
+    ...(input.webSearch ? { webSearch: input.webSearch } : {}),
     taskAdapter: delegationEntryPointsEnabled ? input.taskAdapter : undefined,
     taskAppendAdapter: delegationEntryPointsEnabled
       ? input.taskAppendAdapter

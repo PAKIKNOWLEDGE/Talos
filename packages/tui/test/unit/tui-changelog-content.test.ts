@@ -23,11 +23,14 @@ describe('Talos welcome changelog', () => {
     expect(entries.join('\n')).not.toContain('Stale upstream note');
   });
 
-  it('reads the packaged English notes for 0.1.9', () => {
+  it('reads the packaged English notes for 0.1.10', () => {
     const source = readPackagedTuiChangelog('en-US');
     expect(source).toBeTruthy();
-    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.9');
+    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.10');
     expect(entries.length).toBeGreaterThanOrEqual(3);
+    expect(entries.join('\n')).toContain('Web search');
+    expect(entries.join('\n')).toContain('Tavily');
+    expect(entries.join('\n')).toContain('/settings');
     expect(entries.join('\n')).toContain('Collapsal');
     expect(entries.join('\n')).toContain('Classic');
     expect(entries.join('\n')).toContain('boot sound');
@@ -35,11 +38,14 @@ describe('Talos welcome changelog', () => {
     expect(entries.join('\n')).not.toContain('mcode plugin');
   });
 
-  it('reads the packaged Chinese notes for 0.1.9', () => {
+  it('reads the packaged Chinese notes for 0.1.10', () => {
     const source = readPackagedTuiChangelog('zh-CN');
     expect(source).toBeTruthy();
-    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.9');
+    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.10');
     expect(entries.length).toBeGreaterThanOrEqual(3);
+    expect(entries.join('\n')).toContain('Web search');
+    expect(entries.join('\n')).toContain('Tavily');
+    expect(entries.join('\n')).toContain('/settings');
     expect(entries.join('\n')).toContain('Collapsal');
     expect(entries.join('\n')).toContain('Classic');
     expect(entries.join('\n')).toContain('音效');

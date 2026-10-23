@@ -1,4 +1,4 @@
-import type { AsrConfig, Config, ModelConfig, ProviderAuthMode } from '@mavis/config';
+import type { AsrConfig, Config, ModelConfig, ProviderAuthMode, WebSearchConfig } from '@mavis/config';
 
 type LocalModelLimit = Partial<NonNullable<ModelConfig['limit']>>;
 type LocalModelModalities = Partial<NonNullable<ModelConfig['modalities']>>;
@@ -90,6 +90,8 @@ export interface LocalRuntimeConfig {
   /** Read-only projection. Sandbox writes use the dedicated transaction endpoint. */
   sandbox?: Config['sandbox'];
   askUser?: Config['askUser'];
+  /** Native web_search backends; omitted views inherit `auto`. */
+  webSearch?: WebSearchConfig;
   promptConfig?: Config['promptConfig'];
   runawayGuard?: Config['runawayGuard'];
   toolResultCompaction?: Config['toolResultCompaction'];

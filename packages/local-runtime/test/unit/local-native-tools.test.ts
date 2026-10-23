@@ -20,18 +20,21 @@ import { initSkillService } from '../../src/skills/skill-service.js';
 const packageRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
 
 describe('local native turn tools', () => {
-  it('does not advertise default Matrix native search in neutral mode and retains the other native tools', async () => {
+  it('still advertises native web_search in Talos neutral mode', async () => {
     const dataDir = await mkdtemp(join(tmpdir(), 'talos-native-search-'));
-    vi.stubEnv('TALOS_NEUTRAL_RUNTIME', '');
+    vi.stubEnv('TALOS_NEUTRAL_RUNTIME', '1');
     try {
-      const input = { dataDir, workspaceRoot: dataDir, agentName: 'mavis', webSearchEnabled: true };
-      const originalNames = buildLocalNativeRuntimeTools(input).map((tool) => tool.def.name);
-      expect(originalNames).toContain('web_search');
-      vi.stubEnv('TALOS_NEUTRAL_RUNTIME', '1');
-      const neutralNames = buildLocalNativeRuntimeTools(input).map((tool) => tool.def.name);
-      expect(neutralNames).not.toContain('web_search');
-      expect(neutralNames).toEqual(originalNames.filter((name) => name !== 'web_search'));
-    } finally { vi.unstubAllEnvs(); await rm(dataDir, { recursive: true, force: true }); }
+      const names = buildLocalNativeRuntimeTools({
+        dataDir,
+        workspaceRoot: dataDir,
+        agentName: 'mavis',
+        webSearchEnabled: true,
+      }).map((tool) => tool.def.name);
+      expect(names).toContain('web_search');
+    } finally {
+      vi.unstubAllEnvs();
+      await rm(dataDir, { recursive: true, force: true });
+    }
   });
 
   it('keeps an explicitly injected custom search adapter usable in neutral mode', async () => {
@@ -67,16 +70,19 @@ describe('local native turn tools', () => {
     ).toContain('web_search');
   });
 
-  it('executes native search through the authenticated gateway without a Matrix MCP server', async () => {
+  it('executes native search through a configured REST backend without Matrix', async () => {
     vi.stubEnv('MAVIS_BUILD_ENV', 'test');
+    vi.stubEnv('TALOS_NEUTRAL_RUNTIME', '1');
+    vi.stubEnv('TAVILY_API_KEY', 'tvly-test');
+    vi.stubEnv('EXA_API_KEY', '');
+    vi.stubEnv('DEEPSEEK_API_KEY', '');
     const dataDir = await mkdtemp(join(tmpdir(), 'native-search-'));
     const mcpService = new LocalMcpService(() => dataDir);
     const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(
       new Response(
         JSON.stringify({
-          code: 0,
-          results: [{ title: 'Result', link: 'https://example.test', snippet: 'Evidence' }],
-          total: 1,
+          results: [{ title: 'Result', url: 'https://example.test', content: 'Evidence' }],
+          answer: 'Short answer',
         }),
         { status: 200 },
       ),
@@ -91,9 +97,7 @@ describe('local native turn tools', () => {
       mcpService,
       emitBusEvent: vi.fn(),
       threadGoal: { runtimeToolsFor: async () => [] } as never,
-      authContext: { accessToken: 'test-search-token' },
       fetchImpl,
-      routingContextGetter: () => ({ bedrockLane: 'search-lane' }),
     };
     try {
       const sources = await buildLocalTurnToolSources(input);
@@ -103,19 +107,17 @@ describe('local native turn tools', () => {
       expect(searches).toHaveLength(1);
       const result = await searches[0]!.impl.execute(
         { sessionId: 'search-session', turnId: 'search-turn' },
-        { query: 'MiniMax' },
+        { query: 'Node.js test runner' },
       );
-      expect(JSON.parse(result.text)).toMatchObject({ total: 1 });
-      expect(result.details).toMatchObject({
-        server: 'matrix',
-        tool: 'web_search',
-        mcp: { isError: false },
-      });
+      expect(result.isError).not.toBe(true);
+      expect(result.text).toContain('https://example.test');
+      expect(result.text).toContain('Result');
+      expect(result.details).toMatchObject({ provider: 'tavily' });
       const [url, request] = fetchImpl.mock.calls[0]!;
-      expect(String(url)).toMatch(/\/mavis\/api\/v1\/mcp\/web_search$/);
-      expect(new Headers(request?.headers).get('authorization')).toBe('Bearer test-search-token');
-      expect(new Headers(request?.headers).get('bedrock-lane')).toBe('search-lane');
-      expect(JSON.parse(request!.body as string)).toEqual({ query: 'MiniMax' });
+      expect(String(url)).toBe('https://api.tavily.com/search');
+      expect(String(url)).not.toMatch(/matrix/i);
+      expect(new Headers(request?.headers).get('authorization')).toBe('Bearer tvly-test');
+      expect(JSON.parse(request!.body as string)).toMatchObject({ query: 'Node.js test runner' });
 
       const noTools = await buildLocalTurnToolSources({ ...input, toolsDisabled: true });
       expect(noTools.nativeTools).toEqual([]);

@@ -41,6 +41,7 @@ Do **not** merge upstream during a Talos feature slice unless the pre-release sc
 | 2026-10-22 | 0.1.7 (optional Collapsal TUI skin) | Open: #500 #499 tooling/actions deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. No new merged P0 since 0.1.6. | **No** | **release: proceed** — record-only; Collapsal is local TUI. |
 | 2026-10-23 | 0.1.8 (TUI boot sound) | Same open set as 0.1.7. No new merged P0. | **No** | **release: proceed** — record-only; local TUI audio. |
 | 2026-10-23 | 0.1.9 (Collapsal permission footer) | Open: #500 #499 tooling/actions deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. Same open set as 0.1.8. No new merged P0. | **No** | **release: proceed** — record-only; local TUI footer. |
+| 2026-10-23 | 0.1.10 (pluggable web_search) | Open: #500 #499 tooling/actions deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. Same open set as 0.1.9. No new merged P0. | **No** | **release: proceed** — record-only; local search backends. |
 
 ## References
 

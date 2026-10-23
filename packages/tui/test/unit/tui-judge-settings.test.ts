@@ -38,10 +38,12 @@ describe('TuiSettingsPicker LLM judge entry', () => {
     expect(menu).toContain('Interface');
     picker.handleInput('\u001b[B');
     picker.handleInput('\u001b[B');
+    picker.handleInput('\u001b[B');
     picker.handleInput('\r');
     const judge = stripAnsi(picker.render(80).join('\n'));
     expect(judge).toContain('Reuse');
     expect(judge).toContain('Enter a separate judge');
     expect(judge).not.toContain('Fullscreen');
+    expect(judge).not.toContain('Web search');
   });
 });

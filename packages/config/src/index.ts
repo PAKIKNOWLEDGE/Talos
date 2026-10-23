@@ -165,6 +165,28 @@ export type {
   SandboxNetworkPolicy,
 } from './sandbox-config.js';
 export {
+  isWebSearchProviderId,
+  isWebSearchProviderPreference,
+  listConfiguredWebSearchProviders,
+  parseWebSearchConfig,
+  webSearchProviderKey,
+  webSearchSettingsView,
+  WEB_SEARCH_CONFIG_DEFAULTS,
+  WEB_SEARCH_NAMED_KEY_FIELDS,
+  WEB_SEARCH_PROVIDER_ENV,
+  WEB_SEARCH_PROVIDER_ENV_KEYS,
+  WEB_SEARCH_PROVIDER_IDS,
+  WEB_SEARCH_PROVIDER_LABELS,
+} from './web-search-config.js';
+export type {
+  WebSearchConfig,
+  WebSearchNamedKeyField,
+  WebSearchProviderId,
+  WebSearchProviderPreference,
+} from './web-search-config.js';
+export { WebSearchConfigError, writeWebSearchConfig } from './web-search-config-write.js';
+export type { WebSearchConfigPatch } from './web-search-config-write.js';
+export {
   AGENT_BUILTIN_MCP_TOOL_IDS,
   AGENT_BUILTIN_SKILL_IDS,
   AGENT_BUILTIN_TOOL_IDS,

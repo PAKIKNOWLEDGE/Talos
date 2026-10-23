@@ -80,6 +80,7 @@ export async function buildLocalTurnToolSourcesForHost(
     routingContextGetter: input.host.routingContextGetter,
     fetchImpl: input.host.fetchImpl,
     nativeWebSearchEnabled: ['electron', 'tui', 'cli'].includes(input.host.getRuntimeOwnerKind()),
+    ...(runtimeConfig.webSearch ? { webSearch: runtimeConfig.webSearch } : {}),
     mcpService: input.host.mcpService,
     threadGoal: input.host.threadGoal,
     questionnaireContext: input.host.supportsInteraction('questionnaireReply')

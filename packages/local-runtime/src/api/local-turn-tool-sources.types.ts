@@ -12,7 +12,7 @@ import type {
   LocalTaskAppendAdapter,
   LocalTaskControlAdapter,
 } from '@mavis/agent-tools/desktop';
-import type { AgentBuiltinSkillId, ResolvedAgentCapabilities } from '@mavis/config';
+import type { AgentBuiltinSkillId, ResolvedAgentCapabilities, WebSearchConfig } from '@mavis/config';
 
 import type { DesktopTurnCapabilityView } from '../runtime/desktop-turn-capabilities.js';
 import type { LocalRuntimeAuthContext } from '../runtime/model-resolver.js';
@@ -40,6 +40,8 @@ export interface LocalTurnToolSourcesInput {
   matrixLogger?: LocalRuntimeApiHostOptions['matrixLogger'];
   /** Electron, embedded TUI and CLI use the native web_search tool. */
   nativeWebSearchEnabled?: boolean;
+  /** Native web_search backend selection from config.yaml. */
+  webSearch?: WebSearchConfig;
   mcpService: LocalMcpRuntimeCapability;
   threadGoal: LocalThreadGoalIntegration;
   questionnaireContext?: LocalQuestionnaireServiceDeps;

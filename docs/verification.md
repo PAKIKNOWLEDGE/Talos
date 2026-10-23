@@ -315,3 +315,14 @@ Scope: unconfigured Collapsal footer shows Ask / Auto / Full access after contex
 - **Git:** `fix/collapsal-permission-footer` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `24f8f0e`, tag `v0.1.9`.
 - **npm:** `@pakiknowledge/tal0s-code@0.1.9` published from the tarball built at that tag. Registry processing may take a few minutes.
 - **GitHub Release:** [v0.1.9](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.9) with `.tar.gz` + `.sha256`.
+
+## Pluggable web_search (0.1.10)
+
+Scope: native `web_search` uses Tavily / Exa / DeepSeek from `/settings` → Web search. Matrix search path removed. Tool stays visible without a key. Welcome notes copy 0.1.9 Collapsal, footer, and boot-sound bullets.
+
+### Verification
+
+- Focused Vitest: web_search client/config, `/settings` Web search page, packaged changelog 0.1.10 notes.
+- Maintainer verified live TUI `/settings` → Web search.
+- `pnpm verify --profile windows` pending on the feature commit.
+- Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-23 — **release: proceed** (no P0).
