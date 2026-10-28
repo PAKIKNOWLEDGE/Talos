@@ -332,3 +332,14 @@ Scope: native `web_search` uses Tavily / Exa / DeepSeek from `/settings` → Web
 - **Git:** `feat/web-search-providers` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `1e6f6d4`, tag `v0.1.10`.
 - **npm:** `@pakiknowledge/tal0s-code@0.1.10` published from the tarball built at that tag. Registry processing may take a few minutes.
 - **GitHub Release:** [v0.1.10](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.10) with `.tar.gz` + `.sha256`.
+
+## Collapsal System notes and TUI session wipe (0.1.11)
+
+Scope: Collapsal Welcome shows titled full-width System notes. `/sessions` keeps Ctrl+D archive and adds permanent delete (Ctrl+X twice). Desktop/ACP delete mapping unchanged. Classic remains default. npm ship procedure is `release/talos-release.json`.
+
+### Verification
+
+- Focused Vitest: Collapsal welcome notes, session manager double Ctrl+X, chat-controller `deleteSession`, packaged changelog 0.1.11 notes, `release/talos-release.json` contract.
+- Maintainer verified live TUI `/sessions` delete.
+- `pnpm verify --profile windows` **PASS** at `61cea10` (~87s): 10 gates on win32.
+- Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-28 — **release: proceed** (no P0).
