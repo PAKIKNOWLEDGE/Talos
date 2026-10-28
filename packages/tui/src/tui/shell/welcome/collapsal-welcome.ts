@@ -1,8 +1,9 @@
 import type { Component } from '../../rendering/component.js';
-import { truncateToWidth, visibleWidth } from '../../rendering/text.js';
+import { truncateToWidth, visibleWidth, wrapTextWithAnsi } from '../../rendering/text.js';
 import { tuiChalk as chalk, tuiColors as colors } from '../../theme/runtime.js';
 import type { TuiShellState } from '../contracts.js';
 import { collapsalWelcomeArt } from './collapsal-art.js';
+import { TALOS_WELCOME_DESIGN } from './design.js';
 
 export const COLLAPSAL_WELCOME_COMMANDS = ['/init', '/plan', '/sessions', '/provider'] as const;
 
@@ -15,15 +16,23 @@ export function renderCollapsalWelcome(
   options: {
     readonly density?: 'standard' | 'compact';
     readonly notice?: string;
+    readonly changelogEntries?: readonly string[];
   } = {},
 ): string[] {
   const compact = options.density === 'compact' || width < MIN_TWO_COLUMN_WIDTH;
   return compact
-    ? renderSingleColumn(state, width, options.notice)
-    : renderTwoColumn(state, width, options.notice);
+    ? renderSingleColumn(state, width, options)
+    : renderTwoColumn(state, width, options);
 }
 
-function renderTwoColumn(state: TuiShellState, width: number, notice?: string): string[] {
+function renderTwoColumn(
+  state: TuiShellState,
+  width: number,
+  options: {
+    readonly notice?: string;
+    readonly changelogEntries?: readonly string[];
+  },
+): string[] {
   const leftWidth = resolveLeftWidth(width);
   const rightWidth = Math.max(0, width - leftWidth - 7);
   const art = collapsalWelcomeArt(leftWidth).map((line) =>
@@ -35,29 +44,41 @@ function renderTwoColumn(state: TuiShellState, width: number, notice?: string): 
   const body = Array.from({ length: rows }, (_, index) =>
     splitRow(left[index] ?? '', right[index] ?? '', leftWidth, width),
   );
+  const notes = renderUpdateSection(options.changelogEntries, width, 3);
   return [
     renderHeader(state, width),
-    ...renderNoticeRows(notice, width),
+    ...renderNoticeRows(options.notice, width),
     ...body,
-    splitBottom(leftWidth, width),
+    ...(notes.length > 0
+      ? [splitJoin(leftWidth, width), ...notes, renderBottom(width)]
+      : [splitBottom(leftWidth, width)]),
   ];
 }
 
-function renderSingleColumn(state: TuiShellState, width: number, notice?: string): string[] {
+function renderSingleColumn(
+  state: TuiShellState,
+  width: number,
+  options: {
+    readonly notice?: string;
+    readonly changelogEntries?: readonly string[];
+  },
+): string[] {
   const inner = Math.max(0, width - 4);
   const art =
     inner >= 22 ? collapsalWelcomeArt(inner).map((line) => chalk.bold.hex(colors.brand)(line)) : [];
   const commands = COLLAPSAL_WELCOME_COMMANDS.slice(0, 2).map((command) =>
     chalk.hex(colors.dim)(command),
   );
+  const notes = renderUpdateSection(options.changelogEntries, width, 2);
   return [
     renderHeader(state, width),
-    ...renderNoticeRows(notice, width),
+    ...renderNoticeRows(options.notice, width),
     ...art.map((line) => frameRow(line, width)),
     ...renderMeta(state).map((line) => frameRow(line, width)),
     frameRow('', width),
     frameRow(chalk.bold.hex(colors.text)('Welcome'), width),
     ...commands.map((command) => frameRow(command, width)),
+    ...(notes.length > 0 ? [frameRow('', width), ...notes] : []),
     renderBottom(width),
   ];
 }
@@ -70,6 +91,27 @@ function renderRightColumn(width: number): string[] {
     divider,
     ...COLLAPSAL_WELCOME_COMMANDS.map((command) => chalk.hex(colors.dim)(command)),
   ];
+}
+
+function renderUpdateSection(
+  changelogEntries: readonly string[] | undefined,
+  width: number,
+  limit: number,
+): string[] {
+  if (!changelogEntries?.length) return [];
+  const inner = Math.max(1, width - 4);
+  const title = chalk.bold.hex(colors.brand)(TALOS_WELCOME_DESIGN.sectionTitles.news);
+  const mark = `${chalk.bold.hex(colors.orbit)('›')} `;
+  const wrapWidth = Math.max(1, inner - 2);
+  const rows = [frameRow(title, width)];
+  for (const entry of changelogEntries.slice(0, limit)) {
+    const wrapped = wrapTextWithAnsi(entry, wrapWidth);
+    wrapped.forEach((line, index) => {
+      const prefix = index === 0 ? mark : '  ';
+      rows.push(frameRow(`${prefix}${chalk.hex(colors.text)(line)}`, width));
+    });
+  }
+  return rows;
 }
 
 function renderMeta(state: TuiShellState): string[] {
@@ -112,6 +154,13 @@ function frameRow(content: string, width: number): string {
 function splitRow(left: string, right: string, leftWidth: number, width: number): string {
   const rightWidth = Math.max(0, width - leftWidth - 7);
   return `${hairline('│')} ${padCell(left, leftWidth)} ${hairline('│')} ${padCell(right, rightWidth)} ${hairline('│')}`;
+}
+
+function splitJoin(leftWidth: number, width: number): string {
+  const rightWidth = Math.max(0, width - leftWidth - 7);
+  return `${hairline('├')}${hairline('─'.repeat(leftWidth + 2))}${hairline('┴')}${hairline(
+    '─'.repeat(rightWidth + 2),
+  )}${hairline('┤')}`;
 }
 
 function splitBottom(leftWidth: number, width: number): string {

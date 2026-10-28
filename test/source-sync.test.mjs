@@ -6,7 +6,7 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { execFileSync, spawnSync } from 'node:child_process';
 import { prepareSourceSync } from '../scripts/prepare-source-sync.mjs';
-import { extractionPath, inventoryPath } from '../scripts/lib/release-metadata.mjs';
+import { extractionPath, inventoryPath, talosReleasePath, readTalosRelease } from '../scripts/lib/release-metadata.mjs';
 import { extractSourceArchive } from '../scripts/lib/source-archive.mjs';
 import { classifyChanges } from '../scripts/ci-changes.mjs';
 import { suiteInventoryViolations } from '../scripts/lib/vitest-suites.mjs';
@@ -443,6 +443,24 @@ test('rejected tag pushes cannot leave a partial remote release branch or open a
   assert.equal(f.git('ls-remote', 'origin', 'refs/tags/v1.2.4', 'refs/heads/release/v1.2.4'), '');
   assert.equal(f.git('rev-parse', 'origin/main'), f.base);
   assert.equal(f.git('rev-parse', 'v1.2.4^{commit}'), f.git('rev-parse', 'HEAD'));
+});
+
+test('Talos npm ship contract is skip-PR Windows procedure', () => {
+  const root = fileURLToPath(new URL('..', import.meta.url));
+  const contract = readTalosRelease(root);
+  assert.equal(contract.schemaVersion, 1);
+  assert.equal(contract.policy.githubPullRequest, 'skip');
+  assert.equal(contract.policy.verifyProfile, 'windows');
+  assert.equal(contract.package.name, '@pakiknowledge/tal0s-code');
+  assert.equal(talosReleasePath, 'release/talos-release.json');
+  const ids = contract.steps.map((step) => step.id);
+  assert.deepEqual(ids, [...new Set(ids)]);
+  for (const id of ['verify', 'release-cli', 'npm-publish', 'github-release']) {
+    assert.ok(ids.includes(id), id);
+  }
+  const releasing = readFileSync(path.join(root, 'docs/releasing.md'), 'utf8');
+  assert.match(releasing, /release\/talos-release\.json/);
+  assert.doesNotMatch(releasing, /## Talos release runbook/);
 });
 
 test('npm release manifests require native SQLite and pin installed external dependencies', t => {

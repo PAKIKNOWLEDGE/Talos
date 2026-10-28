@@ -59,11 +59,11 @@ Configuration and sessions are stored in `~/.talos` by default (`%USERPROFILE%\.
 
 Run `talos update` or enter `/update` to check for a new version. Talos shows the upgrade command; installation is always manual. To upgrade, run the npm install command above again.
 
-Release notes: [0.1.10](docs/releases/0.1.10.md) · [0.1.9](docs/releases/0.1.9.md) · [0.1.8](docs/releases/0.1.8.md) · [0.1.7](docs/releases/0.1.7.md).
+Release notes: [0.1.11](docs/releases/0.1.11.md) · [0.1.10](docs/releases/0.1.10.md) · [0.1.9](docs/releases/0.1.9.md) · [0.1.8](docs/releases/0.1.8.md).
 
 ## Release status
 
-Talos **0.1.10** is the current CLI line (`@pakiknowledge/tal0s-code`). Recent 0.1.x work includes pluggable `web_search` (Tavily / Exa / DeepSeek from `/settings`), the Collapsal interface (default footer shows Ask / Auto / Full access), a user-configured LLM permission judge in Auto, and a short TUI boot sound on Windows. Windows x64 release checks passed on this line. Normal model-driven use on NixOS has been confirmed; Linux boot-sound playback is untested. See [verification records](docs/verification.md) and [current status](docs/status.md).
+Talos **0.1.11** is the current CLI line (`@pakiknowledge/tal0s-code`). This patch shows Collapsal System notes on Welcome and adds `/sessions` permanent delete (Ctrl+X twice; Ctrl+D still archives). Recent 0.1.x work also includes pluggable Web search (Tavily / Exa / DeepSeek from `/settings`), the Collapsal interface (default footer shows Ask / Auto / Full access), a user-configured LLM permission judge in Auto, and a short TUI boot sound on Windows. Windows x64 release checks passed on this line. Normal model-driven use on NixOS has been confirmed; Linux boot-sound playback is untested. See [verification records](docs/verification.md) and [current status](docs/status.md).
 
 The desktop GUI lives in the companion repository `T3rra-C0d3-Talos`.
 

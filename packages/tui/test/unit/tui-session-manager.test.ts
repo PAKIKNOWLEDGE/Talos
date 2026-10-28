@@ -57,6 +57,7 @@ function createManager(
       return { ...(session ?? { sessionId }), title };
     }),
     onSetArchived: vi.fn(async () => undefined),
+    onDelete: vi.fn(async () => undefined),
     onCancel: vi.fn(),
     requestRender: vi.fn(),
   };
@@ -325,6 +326,27 @@ describe('TuiSessionManager', () => {
     await vi.waitFor(() =>
       expect(callbacks.onSetArchived).toHaveBeenCalledWith('session-current', false),
     );
+  });
+
+  it('deletes the selected session only after a second Ctrl+X', async () => {
+    const { callbacks, manager } = createManager();
+
+    expect(renderPlain(manager)).toContain('Ctrl+X delete');
+    manager.handleInput('\x18');
+    expect(renderPlain(manager)).toContain('Delete session forever?');
+    expect(renderPlain(manager)).toContain('Ctrl+X again to delete');
+    expect(callbacks.onDelete).not.toHaveBeenCalled();
+
+    manager.handleInput('\x1b');
+    expect(renderPlain(manager)).not.toContain('Delete session forever?');
+    expect(callbacks.onDelete).not.toHaveBeenCalled();
+
+    manager.handleInput('\x18');
+    manager.handleInput('\x18');
+    await vi.waitFor(() => expect(callbacks.onDelete).toHaveBeenCalledWith('session-current'));
+    await flushActions();
+    expect(renderPlain(manager)).not.toContain('Fix the login flow');
+    expect(renderPlain(manager)).toContain('Session deleted.');
   });
 
   it('prefills rename, rejects empty titles, and skips unchanged titles', async () => {

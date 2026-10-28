@@ -690,6 +690,45 @@ describe("visible presentation selector", () => {
     expect(rendered).not.toContain("████████╗");
   });
 
+  it("shows packaged update notes on the Collapsal welcome", () => {
+    const shell = {
+      version: "1.2.3",
+      workspace: "/home/u/proj",
+      homeDir: "/home/u",
+      runtimeStatus: "ready" as const,
+      model: "m2.7",
+    };
+    const notes = [
+      "Web search from /settings",
+      "Footer shows permission mode",
+      "Boot sound on TUI start",
+    ];
+    const wide = stripAnsi(
+      new TuiWelcome(shell, undefined, {
+        skin: "collapsal",
+        changelogEntries: notes,
+      }).render(80).join("\n"),
+    );
+    const compact = stripAnsi(
+      new TuiWelcome(shell, undefined, {
+        skin: "collapsal",
+        changelogEntries: notes,
+      }).render(40).join("\n"),
+    );
+
+    expect(wide).toContain("System notes");
+    expect(wide).toContain("/changelog");
+    expect(wide).toContain("Web search from /settings");
+    expect(wide).toContain("Footer shows permission mode");
+    expect(wide).toContain("Boot sound on TUI start");
+    expect(wide).not.toContain("Field notes");
+    expect(compact).toContain("System notes");
+    expect(compact).toContain("/changelog");
+    expect(compact).toContain("Web search from /settings");
+    expect(compact).toContain("Footer shows permission mode");
+    expect(compact).not.toContain("Boot sound on TUI start");
+  });
+
   it("keeps Classic welcome copy on the default skin", () => {
     const shell = {
       version: "1.2.3",

@@ -49,7 +49,7 @@ Existing README files, `CONTRIBUTING.md`, `.github/PULL_REQUEST_TEMPLATE.md`, Ma
 
 `Node compatibility` runs weekly and on demand against macOS and Linux with Node 22.19.0, 24.2.0, 25 and 26. Windows remains excluded from this matrix; the PR Windows contract is a focused Node 24 check, not a substitute for the full compatibility matrix. It does not run automatically on PRs. Dispatch it on the selected branch for changes to supported Node versions, native dependencies or compatibility-sensitive verification tooling, and before a source release. This covers the minimum versions of the two supported ranges and the additional supported majors. Deferring those versions from ordinary PR checks can delay regression discovery; a known failure in a supported version still needs resolution before release. Dependabot proposes weekly Actions and npm updates, grouping Actions and development-tool minor/patch updates. External Actions use reviewed full commit SHAs, while local actions and reusable workflows come from the same checked-out revision.
 
-Source candidates are requested independently through the `Source candidate` workflow; ordinary PRs and main pushes do not produce them. Its Linux/macOS archive validation is described in [Releasing](docs/releasing.md). `CLI release` builds npm-installable tar.gz packages from version tags and validates the same archive before attaching it to a GitHub Release. Its `package` verification profile tests installation of an existing archive; it does not replace full source verification. npm registry and official installer publication remain separate release processes.
+Source candidates are requested independently through the `Source candidate` workflow; ordinary PRs and main pushes do not produce them. Linux/macOS archive validation is described in [Releasing](docs/releasing.md). Talos npm and GitHub Release ships follow [`release/talos-release.json`](release/talos-release.json); the inherited `CLI release` workflow is disabled.
 
 Source export reports separate archive creation, extraction, inventory validation, hashing, and cleanup timings in `export.json`. Windows uses native `tar` after complete archive preflight; other systems use the Node extractor. The preflight rejects traversal, links, duplicate entries and Git metadata before writing files. A machine without native `tar` falls back to Node. Set `MCODE_SOURCE_EXTRACTOR=node` or `native` when comparing extractors locally.
 
@@ -57,7 +57,7 @@ Test files are declared in `test/vitest-suites.json`, grouped by the gate that r
 
 `tsconfig.standalone.json` path mappings are generated from the package scope in `release/extraction.json` and each package's `exports`. After adding a package or an export subpath, run `pnpm gen:tsconfig`; `pnpm check:tsconfig` fails when the committed mapping has drifted.
 
-Review added or removed files before running `node scripts/source-inventory.mjs --write`. Updating the inventory must not bypass checks for private protocols, internal addresses, credentials, or third-party licensing. Before a source release, also scan the complete Git history with Gitleaks; see the [release process](docs/releasing.md).
+Review added or removed files before running `node scripts/source-inventory.mjs --write`. Updating the inventory must not bypass checks for private protocols, internal addresses, credentials, or third-party licensing. Before a source-export candidate, also scan the complete Git history with Gitleaks; see [Releasing](docs/releasing.md).
 
 ## Performance checks
 

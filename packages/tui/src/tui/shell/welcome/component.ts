@@ -49,11 +49,17 @@ export class TuiWelcome implements Component {
 
     const policy = resolveTuiLayoutPolicy(safeWidth);
     const notice = resolveWelcomeAccountNotice(this.state);
+    const collapsalOptions = {
+      ...(notice ? { notice } : {}),
+      ...(this.content.changelogEntries?.length
+        ? { changelogEntries: this.content.changelogEntries }
+        : {}),
+    };
     let frame =
       resolveWelcomeSkin(this.content) === 'collapsal'
         ? renderCollapsalWelcome(this.state, safeWidth, {
             density: policy.welcome === 'compact' ? 'compact' : 'standard',
-            ...(notice ? { notice } : {}),
+            ...collapsalOptions,
           })
         : policy.welcome === 'compact'
           ? renderCompactWelcome(this.state, safeWidth, this.keybindings, this.content)
@@ -65,7 +71,7 @@ export class TuiWelcome implements Component {
         resolveWelcomeSkin(this.content) === 'collapsal'
           ? renderCollapsalWelcome(this.state, safeWidth, {
               density: 'compact',
-              ...(notice ? { notice } : {}),
+              ...collapsalOptions,
             })
           : renderCompactWelcome(this.state, safeWidth, this.keybindings, this.content);
     }

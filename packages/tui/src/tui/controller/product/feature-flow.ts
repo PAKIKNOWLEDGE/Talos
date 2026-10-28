@@ -572,6 +572,15 @@ export class TuiFeatureFlow {
         if (archived && wasCurrent) await this.options.onArchivedCurrentSession(sessionId);
         this.options.onChanged();
       },
+      onDelete: async (sessionId) => {
+        const wasCurrent = this.options.controller.snapshot().session?.sessionId === sessionId;
+        if (this.rejectLiveSessionNavigation('/sessions')) {
+          throw new Error('Stop the running turn before deleting a Session.');
+        }
+        await this.options.controller.deleteSession(sessionId);
+        if (wasCurrent) await this.options.onArchivedCurrentSession(sessionId);
+        this.options.onChanged();
+      },
       onCancel: () => this.options.surface.close(manager),
       requestRender: this.options.onChanged,
       maxRows: () => this.sessionManagerMaxRows(),

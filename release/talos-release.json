@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "id": "talos-npm-github",
+  "humanDoc": "docs/releasing.md",
+  "package": {
+    "name": "@pakiknowledge/tal0s-code",
+    "command": "talos",
+    "githubRepo": "PAKIKNOWLEDGE/Talos-Code-CLI",
+    "versionFiles": ["package.json", "packages/tui/package.json"]
+  },
+  "policy": {
+    "bump": "patch",
+    "githubPullRequest": "skip",
+    "verifyProfile": "windows",
+    "fullVerifyWhen": "capability-wide change, Linux-equivalent claim, or the maintainer asks",
+    "packageProfile": "optional; a Windows BYOK timeout is not a ship blocker",
+    "publishHost": "Windows maintainer machine",
+    "artifactDir": "%TEMP%\\talos-release",
+    "classicSkinDefault": true,
+    "releaseCliPullRequest": "pnpm release:cli may call gh pr create after the tag push; ignore that failure; do not retry; fast-forward release/vX.Y.Z into main with git",
+    "welcomeChangelog": {
+      "files": ["packages/tui/CHANGELOG.md", "packages/tui/CHANGELOG.zh-CN.md"],
+      "rule": "The first ## X.Y.Z heading wins. Put this release's Talos bullets first, then copy the previous Welcome bullets. Do not use underscore in those notes; Welcome strips it.",
+      "test": "packages/tui/test/unit/tui-changelog-content.test.ts"
+    },
+    "never": [
+      "move or recreate a tag after npm or a GitHub Release has referenced it",
+      "advance release/extraction.json sourceRevision",
+      "open a GitHub pull request for the feature or the version bump",
+      "use scripts/publish-cli-release.mjs",
+      "enable .github/workflows/cli-release.yml",
+      "change Classic from the default TUI skin",
+      "write build or tarball output inside the repository"
+    ]
+  },
+  "preTagOnMain": [
+    "packages/tui/CHANGELOG.md",
+    "packages/tui/CHANGELOG.zh-CN.md",
+    "docs/releases/X.Y.Z.md",
+    "README.md",
+    "README_ZH.md",
+    "packages/tui/test/unit/tui-changelog-content.test.ts",
+    "docs/upstream-pr-watch.md"
+  ],
+  "steps": [
+    {
+      "id": "notes",
+      "do": "Write the first ## X.Y.Z changelog sections (EN+ZH), docs/releases/X.Y.Z.md, README current-version lines, and the changelog test. Scan upstream PRs; append a release: proceed row or stop on P0. New paths: node scripts/source-inventory.mjs --write."
+    },
+    {
+      "id": "commit-feature",
+      "do": "Commit feature work plus notes on the feature branch. Working tree must be clean. Source export reads committed HEAD."
+    },
+    {
+      "id": "verify",
+      "command": "pnpm verify --profile windows"
+    },
+    {
+      "id": "record-verify",
+      "do": "Fill docs/releases/X.Y.Z.md Validation and docs/verification.md with the windows-profile SHA. Commit on the feature branch."
+    },
+    {
+      "id": "ff-main",
+      "commands": [
+        "git checkout main",
+        "git merge --ff-only <feature-branch>",
+        "git push origin main"
+      ]
+    },
+    {
+      "id": "release-cli",
+      "from": "latest origin/main, clean tree",
+      "commands": [
+        "pnpm release:cli --version X.Y.Z --dry-run",
+        "pnpm release:cli --version X.Y.Z"
+      ]
+    },
+    {
+      "id": "ff-version",
+      "commands": [
+        "git checkout main",
+        "git merge --ff-only release/vX.Y.Z",
+        "git push origin main"
+      ]
+    },
+    {
+      "id": "package",
+      "from": "tag vX.Y.Z",
+      "env": {
+        "MCODE_RELEASE_TAG": "vX.Y.Z",
+        "TALOS_NPM_PACKAGE_NAME": "@pakiknowledge/tal0s-code"
+      },
+      "commands": [
+        "git checkout vX.Y.Z",
+        "New-Item -ItemType Directory -Force -Path $env:TEMP\\talos-release",
+        "pnpm build",
+        "node scripts/package-cli-release.mjs vX.Y.Z $env:TEMP\\talos-release --publishable"
+      ],
+      "artifacts": [
+        "%TEMP%\\talos-release\\pakiknowledge-tal0s-code-X.Y.Z.tar.gz",
+        "%TEMP%\\talos-release\\pakiknowledge-tal0s-code-X.Y.Z.tar.gz.sha256"
+      ]
+    },
+    {
+      "id": "npm-publish",
+      "command": "npm publish $env:TEMP\\talos-release\\pakiknowledge-tal0s-code-X.Y.Z.tar.gz --access public"
+    },
+    {
+      "id": "github-release",
+      "command": "gh release create vX.Y.Z --repo PAKIKNOWLEDGE/Talos-Code-CLI --title \"Talos CLI X.Y.Z\" --notes-file docs/releases/X.Y.Z.md --latest $env:TEMP\\talos-release\\pakiknowledge-tal0s-code-X.Y.Z.tar.gz $env:TEMP\\talos-release\\pakiknowledge-tal0s-code-X.Y.Z.tar.gz.sha256"
+    },
+    {
+      "id": "record-delivery",
+      "do": "On main, record npm + GitHub Release in docs/verification.md. Commit and push. Do not tag this docs commit."
+    }
+  ]
+}

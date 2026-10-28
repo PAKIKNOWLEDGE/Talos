@@ -10,7 +10,7 @@ This repository is the reviewed public projection of an internal monorepo, not a
 
 - `packages/` — first-party workspace packages. `packages/agent-modules/*` is a second level of packages, not a package itself.
 - `third_party/` — vendored upstream packages (`pi-mono`, `sandbox-runtime`) with their own licenses. Their test suites are not part of this distribution's verification.
-- `release/` — machine-read release contracts. `extraction.json` pins the source baseline and package scope, `public-source.json` is the file inventory, `dependency-licenses.json` records declared dependency licenses. Build, type-check, test resolution, and source checks all read from here.
+- `release/` — machine-read release contracts. `extraction.json` pins the source baseline and package scope, `public-source.json` is the file inventory, `dependency-licenses.json` records declared dependency licenses, `talos-release.json` is the npm/GitHub ship procedure. Build, type-check, test resolution, and source checks all read from here.
 - `docs/` — human-readable documentation and supporting media. **[docs/status.md](docs/status.md)** is the engine handover card; **[docs/glossary.md](docs/glossary.md)** defines product vs routing names.
 - `scripts/` — build and verification tooling. Shared constants live in `scripts/lib/`; import them instead of repeating literal paths or lists.
 - `test/` — repository-level tests and `vitest-suites.json`, the declaration of every Vitest file this distribution runs.
@@ -35,7 +35,7 @@ Review added, removed, and renamed files before regenerating the inventory: reco
 
 ## Branches and source synchronization
 
-Use a feature branch and submit a pull request; do not push directly to the default branch. See `CONTRIBUTING.md` for contribution and review requirements.
+Use a feature branch and submit a pull request; do not push directly to the default branch. See `CONTRIBUTING.md` for contribution and review requirements. Maintainer npm ships skip GitHub PRs and follow `release/talos-release.json`.
 
 Name new branches by the purpose of the change: `feat/<short-description>` for features, `fix/<short-description>` for bug fixes, and corresponding prefixes such as `docs/`, `refactor/`, `test/`, or `chore/` for other work. Use concise English descriptions in lowercase kebab-case, for example `feat/provider-limits` or `fix/session-restore`. Do not use agent or tool names as branch prefixes, including `codex/`. Follow an explicitly requested branch name when one is provided.
 
@@ -52,6 +52,7 @@ Never merge internal Git history or cherry-pick internal commits into this repos
 | Verification pipeline | `scripts/verify.mjs` | GitHub CI, `pnpm verify` |
 | Documentation-only classification | `scripts/ci-changes.mjs` | source verification, release audit |
 | Source archive validation/extraction | `scripts/lib/source-archive.mjs` | source export, candidate validation |
+| Talos npm/GitHub ship | `release/talos-release.json` | maintainers, `docs/releasing.md` |
 
 ## Common changes
 

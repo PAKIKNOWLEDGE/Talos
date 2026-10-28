@@ -25,7 +25,7 @@ import { formatTuiActionFailure } from '../../../user-facing-failure.js';
 
 type SessionManagerView = 'active' | 'archived';
 type SessionManagerScope = 'workspace' | 'all';
-type SessionManagerMode = 'list' | 'rename' | 'confirm-archive';
+type SessionManagerMode = 'list' | 'rename' | 'confirm-archive' | 'confirm-delete';
 type SessionRecencySection = 'today' | 'yesterday' | 'previous-7-days' | 'older';
 const SESSION_LIST_VISIBLE_LIMIT = 10;
 const SESSION_SEARCH_DEBOUNCE_MS = 200;
@@ -49,6 +49,7 @@ export interface TuiSessionManagerOptions {
   onNew(): Promise<void> | void;
   onRename(sessionId: string, title: string): Promise<TuiSession>;
   onSetArchived(sessionId: string, archived: boolean): Promise<void> | void;
+  onDelete(sessionId: string): Promise<void> | void;
   onCancel(): void;
   requestRender(): void;
   now?: () => number;
@@ -138,6 +139,11 @@ export class TuiSessionManager implements Component, Focusable {
       else if (getKeybindings().matches(data, 'tui.select.cancel')) this.exitActionMode();
       return;
     }
+    if (this.mode === 'confirm-delete') {
+      if (matchesKey(data, Key.ctrl('x'))) this.confirmDelete();
+      else if (getKeybindings().matches(data, 'tui.select.cancel')) this.exitActionMode();
+      return;
+    }
 
     if (matchesKey(data, Key.up)) {
       this.moveSelection(-1);
@@ -179,6 +185,10 @@ export class TuiSessionManager implements Component, Focusable {
     }
     if (!searchActive && matchesKey(data, Key.ctrl('d'))) {
       this.toggleSelectedArchived();
+      return;
+    }
+    if (matchesKey(data, Key.ctrl('x'))) {
+      this.beginDeleteSelected();
       return;
     }
     if (matchesKey(data, Key.enter)) {
@@ -239,6 +249,12 @@ export class TuiSessionManager implements Component, Focusable {
         safeWidth,
       );
     }
+    if (this.mode === 'confirm-delete') {
+      return this.fitLines(
+        this.fitToRows(this.renderDeleteConfirmation(safeWidth, maxRows), maxRows),
+        safeWidth,
+      );
+    }
     return this.fitLines(this.fitToRows(this.renderList(safeWidth, maxRows), maxRows), safeWidth);
   }
 
@@ -280,7 +296,7 @@ export class TuiSessionManager implements Component, Focusable {
       ? undefined
       : `Ctrl+A ${this.scope === 'workspace' ? 'all' : 'current'} · Ctrl+N new · Ctrl+R rename · Ctrl+D ${
           this.view === 'active' ? 'archive' : 'restore'
-        }${this.hasMore ? ' · More sessions available · Ctrl+L more' : ''} · Esc close`;
+        } · Ctrl+X delete${this.hasMore ? ' · More sessions available · Ctrl+L more' : ''} · Esc close`;
     const footerRows = renderPanelFooter(
       [primaryFooter, ...(secondaryFooter ? [secondaryFooter] : [])],
       Math.max(1, width - 4),
@@ -607,6 +623,23 @@ export class TuiSessionManager implements Component, Focusable {
     );
   }
 
+  private renderDeleteConfirmation(width: number, height?: number): string[] {
+    const target = this.findActionTarget();
+    return renderPanelFrame(
+      {
+        title: 'Delete session forever?',
+        body: [
+          sanitizeTerminalText(target?.title?.trim() || target?.sessionId || 'Unknown session'),
+          chalk.hex(colors.muted)('Transcript, files, and history are removed. This cannot be undone.'),
+        ],
+        footer: 'Ctrl+X again to delete · Esc cancel',
+      },
+      width,
+      height,
+      'error',
+    );
+  }
+
   private visibleSessions(): TuiSession[] {
     const queryTokens = this.searchInput
       .getValue()
@@ -889,6 +922,33 @@ export class TuiSessionManager implements Component, Focusable {
       this.exitActionMode(false);
       this.clampSelection();
       this.setStatus('Session archived.', 'info');
+    });
+  }
+
+  private beginDeleteSelected(): void {
+    const target = this.selectedSession();
+    if (!target) return;
+    this.mode = 'confirm-delete';
+    this.actionTargetId = target.sessionId;
+    this.status = undefined;
+    this.syncInputFocus();
+    this.requestRender();
+  }
+
+  private confirmDelete(): void {
+    const target = this.findActionTarget();
+    if (!target) {
+      this.exitActionMode();
+      return;
+    }
+    void this.runAction(async () => {
+      await this.options.onDelete(target.sessionId);
+      if (this.disposed) return;
+      this.sessions = this.sessions.filter((session) => session.sessionId !== target.sessionId);
+      if (this.activeSessionId === target.sessionId) this.activeSessionId = undefined;
+      this.exitActionMode(false);
+      this.clampSelection();
+      this.setStatus('Session deleted.', 'info');
     });
   }
 

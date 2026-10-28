@@ -575,7 +575,9 @@ export class TuiSessionFlow {
     if (event.type === 'session.deleted' && currentSessionId === event.sessionId) {
       await this.options.controller.whenIdle();
       if (this.stopped) return;
-      await this.startNew({ endPreviousSession: false, allowDuringLiveRun: true });
+      if (this.options.controller.snapshot().session?.sessionId === event.sessionId) {
+        await this.startNew({ endPreviousSession: false, allowDuringLiveRun: true });
+      }
       return;
     }
     await this.options.controller.refreshSessionList();

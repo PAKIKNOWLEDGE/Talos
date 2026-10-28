@@ -9,6 +9,21 @@ Internal refactors, test-only changes, and changes limited to other product surf
 
 Talos release notes are the first heading for that version. Upstream history below keeps older numbers, including another 0.1.4.
 
+## 0.1.11 · 2026-10-28
+
+### Improved
+
+- Collapsal Welcome shows System notes as a full-width block under the command row, wrapped instead of a truncated untitled dump. `/changelog` still has history.
+- `/sessions` keeps Ctrl+D archive. Ctrl+X twice permanently deletes the selected session, including transcript, files, and history. Esc cancels. Desktop and ACP delete mapping are unchanged.
+- Web search uses Tavily, Exa, or DeepSeek. `/settings` → Web search picks the backend and stores the API key. Matrix search is gone.
+- Auto walks whichever keys are saved. If none are configured, the tool stays visible and tells you to open `/settings` → Web search.
+- `/settings` has an Interface page for Classic and Collapsal. Classic stays the default; the chosen skin applies after restart.
+- Collapsal fullscreen pins version, model, and path above the transcript so they stay on screen while you scroll.
+- The Collapsal default footer is cwd | git | model | remaining context | permission. Ask, Auto, and Full access show at the end; PLAN appears only in Plan mode. No stars.
+- Collapsal draws user messages as bubbles with ❯ and a hairline separator after assistant turns.
+- Interactive TUI plays a short boot sound. Classic and Collapsal both play it. Login restart does not play it again.
+- Windows uses the system SoundPlayer. Linux tries pw-play then paplay. A missing player stays silent.
+
 ## 0.1.10 · 2026-10-23
 
 ### Improved

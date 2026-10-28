@@ -342,6 +342,26 @@ export class TuiChatController {
     return session;
   }
 
+  async deleteSession(sessionId: string): Promise<void> {
+    this.assertNoActiveTurn('deleting a session');
+    this.invalidateSessionCatalogRefresh();
+    const isCurrent = this.state.session?.sessionId === sessionId;
+    const deleteSession = requireRuntimeMethod(this.runtime, 'deleteSession');
+    await deleteSession(sessionId);
+    if (isCurrent) {
+      this.turnProjection.clearTodos();
+      this.transcript.clear();
+      this.durableMessageAnchor = undefined;
+    }
+    this.updateState({
+      status: 'idle',
+      session: isCurrent ? undefined : this.state.session,
+      sessions: this.state.sessions.filter((item) => item.sessionId !== sessionId),
+      error: undefined,
+      ...(isCurrent ? { lastSettledTurn: undefined } : {}),
+    });
+  }
+
   async submit(rawContent: string, options: TuiSubmitOptions = {}): Promise<TuiSubmitStatus> {
     const content = rawContent.trim();
     const displayContent = options.displayContent?.trim() ?? content;

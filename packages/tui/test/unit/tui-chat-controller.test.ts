@@ -2855,6 +2855,45 @@ describe('TuiChatController', () => {
     );
   });
 
+  it('permanently deletes a Session without touching the active projection', async () => {
+    const runtime = {
+      listSessions: vi.fn(async () => [
+        { sessionId: 'session-1', title: 'First', workspaceDir: '/workspace', updatedAt: 200 },
+        { sessionId: 'session-2', title: 'Second', workspaceDir: '/other', updatedAt: 100 },
+      ]),
+      getSession: vi.fn(async (sessionId: string) => ({
+        sessionId,
+        title: sessionId === 'session-1' ? 'First' : 'Second',
+        workspaceDir: sessionId === 'session-1' ? '/workspace' : '/other',
+      })),
+      getMessages: vi.fn(async () => []),
+      deleteSession: vi.fn(async () => undefined),
+      getAccountStatus: vi.fn(async () => ({ status: 'ready' as const, warnings: [] })),
+      sendMessage: vi.fn(),
+      abortSession: vi.fn(async () => true),
+    };
+    const controller = new TuiChatController({
+      runtime,
+      transcript: new TranscriptStore(),
+      workspaceDir: '/workspace',
+    });
+
+    await controller.initialize();
+    await controller.loadSessionProjection('session-1');
+    await controller.deleteSession('session-2');
+
+    expect(runtime.deleteSession).toHaveBeenCalledWith('session-2');
+    expect(controller.snapshot().session?.sessionId).toBe('session-1');
+    expect(controller.snapshot().sessions.map((session) => session.sessionId)).not.toContain(
+      'session-2',
+    );
+
+    await controller.deleteSession('session-1');
+    expect(runtime.deleteSession).toHaveBeenCalledWith('session-1');
+    expect(controller.snapshot().session).toBeUndefined();
+    expect(controller.snapshot().sessions).toEqual([]);
+  });
+
   it.each([false, true])(
     'rebuilds todos from rewound history with earlier todos=%s',
     async (keepEarlier) => {
