@@ -343,3 +343,9 @@ Scope: Collapsal Welcome shows titled full-width System notes. `/sessions` keeps
 - Maintainer verified live TUI `/sessions` delete.
 - `pnpm verify --profile windows` **PASS** at `61cea10` (~87s): 10 gates on win32.
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-28 — **release: proceed** (no P0).
+
+### Delivery (2026-10-28)
+
+- **Git:** `fix/collapsal-update-and-session-delete` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `f927902`, tag `v0.1.11`.
+- **npm:** `@pakiknowledge/tal0s-code@0.1.11` published from the tarball built at that tag. Registry processing may take a few minutes.
+- **GitHub Release:** [v0.1.11](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.11) with `.tar.gz` + `.sha256`.
