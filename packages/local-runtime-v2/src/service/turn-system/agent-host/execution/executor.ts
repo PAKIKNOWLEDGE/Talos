@@ -346,6 +346,7 @@ export class LocalRuntimeTurnExecutor<
         runtimeSeqGenerator: input.pluginHookEventReporter?.nextRuntimeSeq,
         history: prepared.history,
         signal: input.lease.signal,
+        streamPreemptSignal: () => input.control.streamPreemptSignal?.(),
         tools: prepared.tools,
         disableBuiltinToolFallback: prepared.toolResolution.disableBuiltinToolFallback,
         toolContext: prepared.toolContext,

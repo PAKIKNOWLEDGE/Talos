@@ -134,9 +134,8 @@ const USER_STEERING_PRODUCERS: ReadonlySet<string> = new Set([
 ]);
 
 /**
- * User steering never extends a finished answer and must survive Turn
- * teardown: the executor defers it at the exit boundary and discard paths
- * requeue it as a fresh query. Non-user producers keep inject/drop semantics.
+ * User steering is injected into the current Turn, including at the exit
+ * boundary. Non-user producers keep inject/drop semantics.
  */
 export function isUserSteeringProducer(producerId: string): boolean {
   return USER_STEERING_PRODUCERS.has(producerId);
@@ -171,6 +170,11 @@ export interface AgentHostScopedTurnControl {
   readonly drainSteering: () => readonly AgentHostSteeringMessage[];
   /** Snapshot before draining; aborts when new ordinary steering is admitted. */
   readonly steeringSignal?: () => AbortSignal | undefined;
+  /**
+   * Aborts only the in-flight model stream when the user barges in.
+   * A fresh signal is issued after each barge-in so the next stream is live.
+   */
+  readonly streamPreemptSignal?: () => AbortSignal | undefined;
   /** Releases an ordinary claim only after required consumption projection succeeds. */
   readonly ackSteering: (messages: readonly AgentHostSteeringMessage[]) => void;
   /** Restores a failed ordinary claim ahead of newer FIFO input. */

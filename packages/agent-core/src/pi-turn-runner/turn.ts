@@ -21,6 +21,7 @@ import type {
 } from './hooks.js';
 import { composeStreamFn } from './llm.js';
 import { withLLMRetry, type LLMCallScope, type LLMCallSettledEvent } from './llm-retry.js';
+import { withUserStreamPreempt } from './llm-stream-timeout.js';
 import type { TurnMetricsRecorder } from './metrics.js';
 import { newTools } from './tools.js';
 import type {
@@ -243,17 +244,20 @@ export function newTurn<TCtx extends ToolExecutionContext>(
     bridge,
     hooks,
     tools,
-    streamFn: withSyntheticResponse(
-      withLlmCallPreparedObservers(mainStreamFn, {
-        input,
-        llm: resolved,
-        tools,
-        thinkingLevel: resolved.thinkingLevel ?? 'off',
-        hooks: hooks.onLLMPrepared,
-        logger: deps.logger,
-      }),
-      syntheticResponse,
-      deps.nowMs,
+    streamFn: withUserStreamPreempt(
+      withSyntheticResponse(
+        withLlmCallPreparedObservers(mainStreamFn, {
+          input,
+          llm: resolved,
+          tools,
+          thinkingLevel: resolved.thinkingLevel ?? 'off',
+          hooks: hooks.onLLMPrepared,
+          logger: deps.logger,
+        }),
+        syntheticResponse,
+        deps.nowMs,
+      ),
+      () => input.streamPreemptSignal?.(),
     ),
     ...(auxiliaryStreamFn
       ? {

@@ -171,6 +171,11 @@ export interface RunTurnInput<TCtx extends ToolExecutionContext = ToolExecutionC
     | import('@earendil-works/pi-ai').UserMessage
   )[];
   signal?: AbortSignal;
+  /**
+   * Aborts only the provider stream for a user barge-in. The Turn signal stays
+   * live, and the wrapper reports a normal stop so the loop can inject the text.
+   */
+  streamPreemptSignal?: () => AbortSignal | undefined;
   toolConfig: ToolConfig<TCtx>;
   hooks?: PiTurnHooks;
   /** Host opt-in for framework transport retry. Omitted hosts keep legacy behavior. */

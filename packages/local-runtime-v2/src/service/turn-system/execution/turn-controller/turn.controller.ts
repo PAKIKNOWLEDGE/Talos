@@ -27,6 +27,7 @@ interface ActiveTurnEntry {
   readonly resolveReleased: () => void;
   readonly steering: AgentHostSteeringMessage[];
   steeringWake: AbortController;
+  streamPreempt: AbortController;
   readonly steeringIdentities: Set<string>;
   readonly steeringClaims: Set<string>;
   readonly toolResultTail: AgentHostSteeringMessage[];
@@ -84,6 +85,7 @@ export function createTurnController(options: TurnControllerOptions): TurnContro
       resolveReleased: released.resolve,
       steering: [],
       steeringWake: new AbortController(),
+      streamPreempt: new AbortController(),
       steeringIdentities: new Set(),
       steeringClaims: new Set(),
       toolResultTail: [],
@@ -125,6 +127,7 @@ export function createTurnController(options: TurnControllerOptions): TurnContro
     return {
       drainSteering: () => drainSteering(entries, lease),
       steeringSignal: () => matchingEntry(entries, lease)?.steeringWake.signal,
+      streamPreemptSignal: () => matchingEntry(entries, lease)?.streamPreempt.signal,
       ackSteering: (messages) => ackSteering(entries, lease, messages),
       restoreSteering: (messages) => restoreSteering(entries, lease, messages, discardSteering),
       tryBeginClose: () => tryBeginClose(entries, lease, discardSteering),
@@ -266,7 +269,16 @@ function steer(
   target.push(input.message);
   entry.steeringIdentities.add(identity);
   wakeOrdinarySteering(entry, lane);
+  if (lane === 'ordinary' && isUserSteeringProducer(input.message.producerId)) {
+    preemptModelStream(entry);
+  }
   return Promise.resolve({ status: 'accepted', turnId: input.turnId });
+}
+
+function preemptModelStream(entry: ActiveTurnEntry): void {
+  const current = entry.streamPreempt;
+  entry.streamPreempt = new AbortController();
+  current.abort();
 }
 
 function promoteForegroundSteer(
@@ -386,9 +398,8 @@ function tryBeginClose(
   if (entry.steering.some((message) => !isUserSteeringProducer(message.producerId))) {
     return { closed: false, reason: 'steer-pending' };
   }
-  // Exit-boundary rule: user steering that was not consumed by the final step
-  // never extends the finished answer. The batch goes to the discard callback
-  // (user producers are requeued as plain queries) and the close proceeds.
+  // A poll at exit consumes user steering into the current Turn. Anything that
+  // arrives after that empty poll still leaves through the discard callback.
   if (entry.steering.length > 0) onDiscarded(entry, entry.steering.splice(0), 'exit-close');
   entry.phase = 'closing';
   return { closed: true };

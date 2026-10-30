@@ -75,7 +75,6 @@ export interface TuiInteractionFlowOptions {
   readonly surface: TuiInteractionSurface;
   readonly defaultAgentName?: string;
   readonly append: AppendLocalCell;
-  readonly deliverPermissionFeedback?: (feedback: string) => Promise<void>;
   readonly onChanged: () => void;
   readonly isStopped?: () => boolean;
   readonly notify?: (kind: TuiTerminalNotificationKind, key: string) => void;
@@ -1213,6 +1212,7 @@ export class TuiInteractionFlow {
         request.agentName ?? this.defaultAgentName,
         requestId,
         decision,
+        decision === 'deny' ? feedback : undefined,
       );
     } catch (error) {
       if (!this.isActiveSession(presentationSessionId)) return;
@@ -1263,21 +1263,6 @@ export class TuiInteractionFlow {
     });
     if (!isCurrent) return;
     this.resolvePermission(request, presentationSessionId);
-    if (decision === 'deny' && feedback && this.options.deliverPermissionFeedback) {
-      try {
-        await this.options.deliverPermissionFeedback(
-          `Regarding the denied ${sanitizeTerminalText(request.toolName ?? 'tool')} action: ${sanitizeTerminalText(feedback)}`,
-        );
-      } catch (error) {
-        this.options.append(
-          formatTuiActionFailure(error, {
-            summary: "The action was denied, but your guidance wasn't sent.",
-            nextStep: 'Send it as a new message if needed.',
-          }),
-          'warning',
-        );
-      }
-    }
     if (!(await this.showNextPendingPermission(presentationSessionId, requestId))) {
       this.showQuestionnairePicker();
     }

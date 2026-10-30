@@ -172,8 +172,9 @@ export async function replyLocalPermissionRequests(
   ctx: LocalPermissionRouteContext,
   requestIds: string[],
   decision: LocalPermissionDecision,
+  guidance?: string,
 ): Promise<{ processed: string[]; skipped: string[] }> {
-  return ctx.approvalService.reply(requestIds, decision);
+  return ctx.approvalService.reply(requestIds, decision, guidance);
 }
 
 export async function beforeLocalToolCall(
@@ -234,7 +235,7 @@ export async function beforeLocalToolCall(
     return undefined;
   }
 
-  const userDecision = await ctx.approvalService.begin(
+  const pending = ctx.approvalService.begin(
     {
       sessionId: session.sessionId,
       agentName: session.agentName,
@@ -248,7 +249,10 @@ export async function beforeLocalToolCall(
       reason: decision.reason,
     },
     signal,
-  ).promise;
+  );
+  const userDecision = await pending.promise;
+  const denialGuidance =
+    userDecision === 'deny' ? ctx.approvalService.takeDenialGuidance(pending.requestId) : undefined;
   if (userDecision === 'allowOnce' || userDecision === 'allowAlways') {
     // Approval changes only whether execution may continue; it must not
     // replace or recompute the decision-time execution plan.
@@ -280,6 +284,7 @@ export async function beforeLocalToolCall(
       // raised — original safety text, or the auto-classifier's cloud verdict
       // in auto mode. Carry it so the model knows what the user vetoed.
       trigger: decision.reason,
+      ...(denialGuidance ? { guidance: denialGuidance } : {}),
     }),
   };
 }
@@ -335,12 +340,16 @@ export function abortLocalPermissionRequests(
 }
 
 /** Hosted-v2 approval port over the shared local approval service. */
-export function requestLocalPermissionApproval(
+export async function requestLocalPermissionApproval(
   ctx: LocalPermissionRouteContext,
   input: LocalPermissionRequestInput,
   signal?: AbortSignal,
-): Promise<LocalPermissionDecision> {
-  return ctx.approvalService.begin(input, signal).promise;
+): Promise<{ readonly decision: LocalPermissionDecision; readonly guidance?: string }> {
+  const pending = ctx.approvalService.begin(input, signal);
+  const decision = await pending.promise;
+  const guidance =
+    decision === 'deny' ? ctx.approvalService.takeDenialGuidance(pending.requestId) : undefined;
+  return guidance ? { decision, guidance } : { decision };
 }
 
 function isString(value: unknown): value is string {

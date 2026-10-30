@@ -137,7 +137,7 @@ export interface TuiCommandSubmitOptions {
   /** Keep an atomic restored Edit pending until Runtime durably accepts it. */
   readonly requireRuntimeAcceptance?: boolean;
   readonly onSubmissionPrepared?: (submission: TuiSubmissionSnapshot) => void;
-  /** Explicit keyboard intent while a Turn is active. Enter steers; Alt+Enter queues. */
+  /** Explicit keyboard intent while a Turn is active. Enter barges in; Alt+Enter queues. */
   readonly busyAction?: 'steer' | 'queue';
   readonly reviewRequest?: { readonly scope: 'local_changes' };
 }

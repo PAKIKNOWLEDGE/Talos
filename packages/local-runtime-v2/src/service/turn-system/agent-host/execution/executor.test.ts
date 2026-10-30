@@ -2375,7 +2375,7 @@ describe("LocalRuntimeTurnExecutor exit-boundary steering", () => {
     return { captured, onSteeringConsumed, restoreSteering, ackSteering };
   }
 
-  it("leaves user steering unconsumed at the exit boundary while non-user producers inject", async () => {
+  it("injects user steering at the exit boundary along with non-user producers", async () => {
     const first = userSteer("composer-steer", "u1", "first user steer");
     const middle = machineSteer("c1", "machine delivery");
     const last = userSteer("queue-immediate-send", "u2", "second user steer");
@@ -2386,20 +2386,22 @@ describe("LocalRuntimeTurnExecutor exit-boundary steering", () => {
       captured?.getSteeringMessages?.({ boundary: "exit" }),
     ).resolves.toEqual([
       expect.objectContaining({
+        content: [{ type: "text", text: "first user steer" }],
+      }),
+      expect.objectContaining({
         role: "user",
         content: [{ type: "text", text: "machine delivery" }],
       }),
+      expect.objectContaining({
+        content: [{ type: "text", text: "second user steer" }],
+      }),
     ]);
-    expect(restoreSteering).toHaveBeenCalledWith([first, last]);
+    expect(restoreSteering).not.toHaveBeenCalled();
     expect(ackSteering).toHaveBeenCalledTimes(1);
-    expect(ackSteering).toHaveBeenCalledWith([middle]);
-    expect(onSteeringConsumed).toHaveBeenCalledTimes(1);
-    expect(onSteeringConsumed).toHaveBeenCalledWith(
-      expect.objectContaining({ message: middle }),
-    );
+    expect(onSteeringConsumed).toHaveBeenCalledTimes(3);
   });
 
-  it("returns nothing at the exit boundary when only user steering is pending", async () => {
+  it("injects user steering at the exit boundary instead of withholding it", async () => {
     const first = userSteer("paused-queue-composer", "u1", "first user steer");
     const last = userSteer("composer-steer", "u2", "second user steer");
     const { captured, onSteeringConsumed, restoreSteering, ackSteering } =
@@ -2407,10 +2409,17 @@ describe("LocalRuntimeTurnExecutor exit-boundary steering", () => {
 
     await expect(
       captured?.getSteeringMessages?.({ boundary: "exit" }),
-    ).resolves.toEqual([]);
-    expect(restoreSteering).toHaveBeenCalledWith([first, last]);
-    expect(ackSteering).not.toHaveBeenCalled();
-    expect(onSteeringConsumed).not.toHaveBeenCalled();
+    ).resolves.toEqual([
+      expect.objectContaining({
+        content: [{ type: "text", text: "first user steer" }],
+      }),
+      expect.objectContaining({
+        content: [{ type: "text", text: "second user steer" }],
+      }),
+    ]);
+    expect(restoreSteering).not.toHaveBeenCalled();
+    expect(ackSteering).toHaveBeenCalledTimes(1);
+    expect(onSteeringConsumed).toHaveBeenCalledTimes(2);
   });
 
   it("keeps draining user steering at mid-turn boundaries", async () => {
@@ -5759,7 +5768,7 @@ describe("child Bash waiting steering", () => {
       }
     },
   );
-  it("preserves exit requeue for user steering when the child has no pending Bash", async () => {
+  it("injects user steering at exit when the child has no pending Bash", async () => {
     const discarded = vi.fn();
     const controller = createTurnController({
       renew: async () => true,
@@ -5785,9 +5794,9 @@ describe("child Bash waiting steering", () => {
     const consumed = vi.fn(async () => undefined);
     const executor = new LocalRuntimeTurnExecutor({
       ...options(async (run) => {
-        expect(await run.getSteeringMessages?.({ boundary: "exit" })).toEqual(
-          [],
-        );
+        expect(
+          JSON.stringify(await run.getSteeringMessages?.({ boundary: "exit" })),
+        ).toContain("next instruction");
         expect(await run.tryBeginClose?.({})).toBe(true);
         await run.eventWriter.pushRuntime(
           terminalEvent(RuntimeEventStatus.COMPLETED),
@@ -5806,11 +5815,8 @@ describe("child Bash waiting steering", () => {
         lease,
         control: controller.scope(lease),
       });
-      expect(consumed).not.toHaveBeenCalled();
-      expect(discarded).toHaveBeenCalledOnce();
-      expect(discarded).toHaveBeenCalledWith(
-        expect.objectContaining({ messages: [message] }),
-      );
+      expect(consumed).toHaveBeenCalledOnce();
+      expect(discarded).not.toHaveBeenCalled();
     } finally {
       controller.complete(lease);
     }

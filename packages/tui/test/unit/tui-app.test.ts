@@ -3406,7 +3406,7 @@ describe("createTuiApp", () => {
         expect(rendered).toContain("Running");
         expect(rendered).not.toContain("Running · 0s");
         expect(rendered).toContain(`${formatTuiShortcut("alt+enter")} queue`);
-        expect(rendered).toContain("Enter steer");
+        expect(rendered).toContain("Enter listen");
         expect(rendered).not.toContain(`${formatTuiShortcut("ctrl+x")} steer`);
         expect(rendered).toContain("Ctrl+O details");
         expect(rendered).toContain("Esc stop");

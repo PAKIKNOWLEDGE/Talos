@@ -1,7 +1,7 @@
 import { decodePrintableKey, getKeybindings, matchesKey } from '../../engine/public.js';
 import type { Component, Focusable } from '../../rendering/component.js';
 import { sanitizeTerminalText } from '../../rendering/terminal-text.js';
-import { renderPanelFrame } from '../../widgets/panel-frame.js';
+import { panelLayout, renderPanelFrame } from '../../widgets/panel-frame.js';
 import type { TuiSavedPermissionRule } from '../../../runtime/port.js';
 
 export interface TuiPermissionRulesPanelOptions {
@@ -16,6 +16,7 @@ export class TuiPermissionRulesPanel implements Component, Focusable {
   readonly handlesViewportKeys = true;
   private rules: TuiSavedPermissionRule[];
   private selectedIndex = 0;
+  private windowStart = 0;
   private busy = false;
   private status?: string;
   private _focused = false;
@@ -57,25 +58,42 @@ export class TuiPermissionRulesPanel implements Component, Focusable {
   }
 
   renderViewport(width: number, height: number): string[] {
+    const footer = '↑↓ move · d delete · Esc close';
+    const frameHeight = Number.isFinite(height) ? height : undefined;
+    const { bodyHeight } = panelLayout(width, frameHeight, footer);
+    const statusRows = this.status ? 1 : 0;
+    const ruleRows = Math.max(0, bodyHeight - statusRows);
     const selected = this.rules[this.selectedIndex];
     const body =
       this.rules.length === 0
         ? ['No saved permission rules.']
-        : this.rules.map((rule, index) => {
-            const mark = index === this.selectedIndex ? '› ' : '  ';
-            return sanitizeTerminalText(`${mark}${formatRule(rule)}`);
-          });
+        : this.visibleRuleLines(ruleRows);
     return renderPanelFrame(
       {
         title: 'Saved permission rules',
         meta: selected ? `${this.selectedIndex + 1}/${this.rules.length}` : '0',
         body: this.status ? [...body, this.status] : body,
-        footer: '↑↓ move · d delete · Esc close',
+        footer,
       },
       width,
-      Number.isFinite(height) ? height : undefined,
+      frameHeight,
       selected?.behavior === 'deny' ? 'error' : 'signal',
     );
+  }
+
+  private visibleRuleLines(rowCount: number): string[] {
+    const count = Math.max(0, Math.min(rowCount, this.rules.length));
+    const maxStart = Math.max(0, this.rules.length - count);
+    if (this.selectedIndex < this.windowStart) this.windowStart = this.selectedIndex;
+    if (count > 0 && this.selectedIndex >= this.windowStart + count) {
+      this.windowStart = this.selectedIndex - count + 1;
+    }
+    this.windowStart = Math.min(Math.max(0, this.windowStart), maxStart);
+    return this.rules.slice(this.windowStart, this.windowStart + count).map((rule, offset) => {
+      const index = this.windowStart + offset;
+      const mark = index === this.selectedIndex ? '› ' : '  ';
+      return sanitizeTerminalText(`${mark}${formatRule(rule)}`);
+    });
   }
 
   private move(delta: number): void {

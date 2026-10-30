@@ -187,11 +187,11 @@ describe("TuiComposer", () => {
   });
 
   it.each([
-    [{ kind: "prompt" }, `Prompt · Enter steer · ${queueShortcut} queue`],
+    [{ kind: "prompt" }, `Prompt · Enter listen · ${queueShortcut} queue`],
     [{ kind: "command", token: "/context" }, "Command · Enter run"],
     [
       { kind: "skill-instructions", token: "/docs" },
-      `Skill · instructions · Enter steer · ${queueShortcut} queue`,
+      `Skill · instructions · Enter listen · ${queueShortcut} queue`,
     ],
   ] satisfies Array<[TuiComposerInputIntent, string]>)(
     "keeps intent-specific Enter guidance accurate while a Turn is active",
@@ -451,7 +451,7 @@ describe("TuiComposer", () => {
     [{ mode: "working", surface: "conversation" }, "Working"],
     [
       { mode: "follow-up", surface: "conversation" },
-      `Message · Enter steer · ${queueShortcut} queue`,
+      `Message · Enter listen · ${queueShortcut} queue`,
     ],
     [
       { mode: "blocked", surface: "conversation" },
@@ -492,8 +492,8 @@ describe("TuiComposer", () => {
   });
 
   it.each([
-    [80, `Message · Enter steer · ${queueShortcut} queue`],
-    [40, `Enter steer · ${queueShortcut} queue`],
+    [80, `Message · Enter listen · ${queueShortcut} queue`],
+    [40, `Enter listen · ${queueShortcut} queue`],
     [28, `${queueShortcut} queue`],
     [18, process.platform === "darwin" ? "Message" : `${queueShortcut} queue`],
     [16, "Message"],
@@ -548,7 +548,7 @@ describe("TuiComposer", () => {
     expect(stripAnsi(command.render(24).join("\n"))).not.toContain("queue");
   });
 
-  it("explains Enter steering and Tab queueing without duplicating interrupt controls", () => {
+  it("explains Enter listening and Tab queueing without duplicating interrupt controls", () => {
     const composer = new TuiComposer(editor(["──────", "", "──────"]), {
       mode: "follow-up",
       surface: "conversation",
@@ -556,11 +556,11 @@ describe("TuiComposer", () => {
 
     const rendered = composer.render(80).join("\n");
     expect(rendered).not.toContain("interrupt");
-    expect(rendered).toContain("Enter steer");
+    expect(rendered).toContain("Enter listen");
     expect(rendered).toContain(`${queueShortcut} queue`);
   });
 
-  it("explains steering and queueing when a running Draft has attachments", () => {
+  it("explains listening and queueing when a running Draft has attachments", () => {
     const composer = new TuiComposer(editor(["──────", "", "──────"]), {
       mode: "follow-up",
       surface: "conversation",
@@ -569,7 +569,7 @@ describe("TuiComposer", () => {
 
     const rendered = composer.render(80).join("\n");
     expect(rendered).toContain(
-      `1 attachment · Enter steer · ${queueShortcut} queue`,
+      `1 attachment · Enter listen · ${queueShortcut} queue`,
     );
   });
 

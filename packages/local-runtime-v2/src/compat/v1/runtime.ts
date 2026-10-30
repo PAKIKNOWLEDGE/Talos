@@ -711,11 +711,12 @@ function createPeripheralApplication(
           .permissionRouteContext()
           .approvalService.listPending();
       },
-      reply: ({ requestIds, decision }) =>
+      reply: ({ requestIds, decision, message }) =>
         replyLocalPermissionRequests(
           host.apiHost.permissionRouteContext(),
           [...requestIds],
           decision,
+          message,
         ),
       listSavedRules: async ({ sessionId } = {}) => {
         const rules = await host.apiHost.permissionRouteContext().permissionRules.listRules({

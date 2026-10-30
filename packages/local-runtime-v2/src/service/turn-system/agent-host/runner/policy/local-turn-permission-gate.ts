@@ -75,7 +75,15 @@ export interface LocalTurnPermissionApprovalOwner {
     readonly ruleMatchers?: readonly LocalTurnPermissionRuleMatcher[];
     readonly signal?: AbortSignal;
     readonly channelContext?: AgentHostChannelContext;
-  }): Promise<'allowOnce' | 'allowAlways' | 'deny'>;
+  }): Promise<
+    | 'allowOnce'
+    | 'allowAlways'
+    | 'deny'
+    | {
+        readonly decision: 'allowOnce' | 'allowAlways' | 'deny';
+        readonly guidance?: string;
+      }
+  >;
 }
 
 export interface LocalTurnPermissionMutationOwner {
@@ -267,22 +275,27 @@ export class LocalTurnPermissionGate {
       behavior: 'ask',
       reason: SIDE_SESSION_APPROVAL_REASON,
     });
-    if (approval === 'deny') {
+    if (approval.decision === 'deny') {
       this.logEnforcement(input, request, {
         policy_behavior: 'ask',
         gate_result: 'blocked',
         decision_source: 'approval_or_abort',
-        approval_decision: approval,
+        approval_decision: approval.decision,
         rewrite_applied: false,
         side_session: true,
       });
-      return permissionBlock(request.toolName, SIDE_SESSION_APPROVAL_REASON, 'user');
+      return permissionBlock(
+        request.toolName,
+        SIDE_SESSION_APPROVAL_REASON,
+        'user',
+        approval.guidance,
+      );
     }
     this.logEnforcement(input, request, {
       policy_behavior: 'ask',
       gate_result: 'proceed',
       decision_source: 'user_reply',
-      approval_decision: approval,
+      approval_decision: approval.decision,
       rewrite_applied: false,
       side_session: true,
     });
@@ -486,22 +499,22 @@ export class LocalTurnPermissionGate {
       return undefined;
     }
     const approval = await this.requestApproval(input, request, decision);
-    if (approval === 'deny') {
+    if (approval.decision === 'deny') {
       this.logEnforcement(input, request, {
         policy_behavior: 'ask',
         gate_result: 'blocked',
         decision_source: 'approval_or_abort',
-        approval_decision: approval,
+        approval_decision: approval.decision,
         rewrite_applied: false,
       });
-      return permissionBlock(request.toolName, decision.reason, 'user');
+      return permissionBlock(request.toolName, decision.reason, 'user', approval.guidance);
     }
     applyExecutionPlan(input.toolContext, executionPlan);
     this.logEnforcement(input, request, {
       policy_behavior: 'ask',
       gate_result: 'proceed',
       decision_source: 'user_reply',
-      approval_decision: approval,
+      approval_decision: approval.decision,
       rewrite_applied: Boolean(executionPlan?.transforms.length),
       execution_plan_present: Boolean(executionPlan),
       transform_count: executionPlan?.transforms.length ?? 0,
@@ -538,7 +551,7 @@ export class LocalTurnPermissionGate {
     },
     request: PermissionToolRequest,
     decision: Extract<LocalTurnPermissionDecision, { readonly behavior: 'ask' }>,
-  ): Promise<'allowOnce' | 'allowAlways' | 'deny'> {
+  ): Promise<PermissionApprovalReply> {
     const approval = this.options.approval;
     if (!approval || typeof approval.request !== 'function') {
       assertAgentHostCapabilityAvailable('permission-approval-owner', false);
@@ -702,20 +715,28 @@ function permissionBlock(
   toolName: string,
   reason: string,
   source: 'policy' | 'user',
+  guidance?: string,
 ): { readonly block: true; readonly reason: string } {
+  const body =
+    source === 'user'
+      ? `Permission denied by user for ${toolName}: ${reason}`
+      : `Permission denied for ${toolName}: ${reason}`;
+  const text = guidance?.trim();
   return {
     block: true,
-    reason:
-      source === 'user'
-        ? `Permission denied by user for ${toolName}: ${reason}`
-        : `Permission denied for ${toolName}: ${reason}`,
+    reason: text && source === 'user' ? `${body} Guidance: ${text}` : body,
   };
+}
+
+interface PermissionApprovalReply {
+  readonly decision: 'allowOnce' | 'allowAlways' | 'deny';
+  readonly guidance?: string;
 }
 
 async function requestApproval(
   owner: LocalTurnPermissionApprovalOwner,
   input: Parameters<LocalTurnPermissionApprovalOwner['request']>[0],
-): Promise<'allowOnce' | 'allowAlways' | 'deny'> {
+): Promise<PermissionApprovalReply> {
   return validateApprovalDecision(await owner.request(input));
 }
 
@@ -803,11 +824,22 @@ function isPermissionRuleActions(
   return value.every((action) => typeof action === 'string' && validActions.has(action));
 }
 
-function validateApprovalDecision(decision: unknown): 'allowOnce' | 'allowAlways' | 'deny' {
-  if (decision !== 'allowOnce' && decision !== 'allowAlways' && decision !== 'deny') {
-    throw new TypeError('Permission approval owner returned an invalid decision.');
+function validateApprovalDecision(decision: unknown): PermissionApprovalReply {
+  if (decision === 'allowOnce' || decision === 'allowAlways' || decision === 'deny') {
+    return { decision };
   }
-  return decision;
+  if (decision && typeof decision === 'object') {
+    const value = Reflect.get(decision, 'decision');
+    const guidance = Reflect.get(decision, 'guidance');
+    if (
+      (value === 'allowOnce' || value === 'allowAlways' || value === 'deny') &&
+      (guidance === undefined || typeof guidance === 'string')
+    ) {
+      const text = guidance?.trim();
+      return text ? { decision: value, guidance: text } : { decision: value };
+    }
+  }
+  throw new TypeError('Permission approval owner returned an invalid decision.');
 }
 
 function readDecisionExecutionPlan(

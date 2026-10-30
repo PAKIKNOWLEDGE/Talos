@@ -43,14 +43,11 @@ export function createContinuationControl(
   const pluginStopState: PluginStopState = { active: false, continuationCount: 0 };
   let stopAfterSteering = false;
   return {
-    getSteeringMessages: async (context) => {
+    getSteeringMessages: async (_context) => {
       const claims = control.drainSteering();
       const messages = claims.flatMap((message) => message.batchMembers ?? [message]);
-      // Exit-boundary rule (immediate-send-steering Decision v2): user
-      // steering never extends a finished answer. It stays unconsumed so the
-      // close that follows an empty poll requeues it as a fresh query, while
-      // non-user producers keep injecting into the current turn.
-      const deferUserProducers = context?.boundary === 'exit';
+      // User steering is injected on every boundary, including exit, so a
+      // barge-in is heard in this Turn instead of being requeued after it.
       const prepared: PiAgentMessage[] = [];
       const batchId = snapshotBatchId(messages, input.lease.turnId);
       const acceptedUserMessageIds: Array<{
@@ -69,7 +66,6 @@ export function createContinuationControl(
       };
       try {
         for (const [index, message] of messages.entries()) {
-          if (deferUserProducers && isUserSteeringProducer(message.producerId)) continue;
           const result = await preparePluginSteeringMessage(input, message, prepare);
           if (result.kind === 'stop') {
             stopAfterSteering = true;

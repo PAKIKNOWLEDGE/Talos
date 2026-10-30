@@ -253,11 +253,6 @@ export function createTuiApp(options: CreateTuiAppOptions): TuiApp {
     surface: interactionSurface,
     defaultAgentName,
     append: appendLocalCell,
-    deliverPermissionFeedback: async (feedback) => {
-      const disposition = await commandFlow.submit(feedback);
-      if (disposition === 'retained')
-        throw new Error('Talos kept the guidance in the composer instead of sending it.');
-    },
     onChanged: () => {
       updateChrome(controller.snapshot());
       if (started && !stopped) tui.requestImmediateRender();

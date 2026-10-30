@@ -125,7 +125,7 @@ describe('TuiActivityLine', () => {
     });
 
     expect(output).toContain('Running 2s');
-    expect(output).toContain(`${formatTuiShortcut('enter')} steer`);
+    expect(output).toContain(`${formatTuiShortcut('enter')} listen`);
     expect(output).toContain('Esc stop');
   });
 
@@ -142,7 +142,7 @@ describe('TuiActivityLine', () => {
       { animate: false, keybindings },
     );
 
-    expect(component.render(80).join('\n')).toContain('Ctrl+Y steer');
+    expect(component.render(80).join('\n')).toContain('Ctrl+Y listen');
   });
 
   it('shows one-decimal provider output throughput while a run is active', () => {
@@ -169,7 +169,7 @@ describe('TuiActivityLine', () => {
     },
   );
 
-  it('drops steer before interrupt when the line runs out of room', () => {
+  it('drops listen before interrupt when the line runs out of room', () => {
     const state: TuiActivityLineState = {
       phase: 'running',
       runId: 'turn-1',
@@ -179,7 +179,7 @@ describe('TuiActivityLine', () => {
     const full = visibleWidth(render(state, 200));
 
     const withoutGuide = render(state, full - 1);
-    expect(withoutGuide).not.toContain('steer');
+    expect(withoutGuide).not.toContain('listen');
     expect(withoutGuide).toContain('Esc stop');
     expect(visibleWidth(withoutGuide)).toBeLessThanOrEqual(full - 1);
 

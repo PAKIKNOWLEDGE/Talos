@@ -353,7 +353,7 @@ const DEFAULT_TUI_KEYBINDINGS: readonly TuiKeybindingDefinition[] = [
     key: 'enter',
     action: 'submit-guidance',
     when: 'live-run',
-    description: 'Guide the current response with the current Draft',
+    description: 'Stop the current reply and send the Draft',
     helpOrder: 90,
   },
   {

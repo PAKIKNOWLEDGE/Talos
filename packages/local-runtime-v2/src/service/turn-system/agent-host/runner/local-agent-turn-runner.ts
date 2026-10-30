@@ -791,6 +791,7 @@ function toPiCoreInput(
     llm: input.llm,
     ...(input.history ? { history: input.history } : {}),
     ...(input.signal ? { signal: input.signal } : {}),
+    ...(input.streamPreemptSignal ? { streamPreemptSignal: input.streamPreemptSignal } : {}),
     ...(input.hooks ? { hooks: input.hooks } : {}),
     ...(input.llmRetry ? { llmRetry: input.llmRetry } : {}),
     ...(input.captureToolTiming !== undefined

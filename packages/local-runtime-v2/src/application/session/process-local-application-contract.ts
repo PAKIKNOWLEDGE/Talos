@@ -211,6 +211,7 @@ export interface LocalRuntimeApplication {
     reply(input: {
       requestIds: readonly string[];
       decision: "allowAlways" | "allowOnce" | "deny";
+      message?: string;
     }): Promise<{ processed: readonly string[]; skipped: readonly string[] }>;
     listSavedRules?(input?: {
       sessionId?: string;

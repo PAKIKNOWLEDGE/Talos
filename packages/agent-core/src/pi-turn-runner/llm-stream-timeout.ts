@@ -259,3 +259,112 @@ function parseTimeout(raw: string | undefined): number | undefined {
 function readProcessEnv(): Readonly<Record<string, string | undefined>> {
   return (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
 }
+
+const PREEMPTED: unique symbol = Symbol('user-stream-preempted');
+
+/**
+ * Stop the current provider stream when the user barges in. The Turn's own
+ * abort still ends the run; a preempt is reported as a normal stop with any
+ * not-yet-started tool call removed, so the agent loop can inject the text.
+ */
+export function withUserStreamPreempt(
+  inner: StreamFn,
+  preemptSignal: () => AbortSignal | undefined,
+): StreamFn {
+  return ((model, context, options) => {
+    const preempt = preemptSignal();
+    if (!preempt) return inner(model, context, options);
+    const caller = options?.signal;
+    const controller = new AbortController();
+    const out = createAssistantMessageEventStream();
+    let finished = false;
+    const onCaller = () => {
+      if (!controller.signal.aborted) controller.abort(caller?.reason);
+    };
+    const onPreempt = () => {
+      if (!controller.signal.aborted) controller.abort(preempt.reason);
+    };
+    if (caller?.aborted) onCaller();
+    else caller?.addEventListener('abort', onCaller, { once: true });
+    if (preempt.aborted) onPreempt();
+    else preempt.addEventListener('abort', onPreempt, { once: true });
+    const cleanup = () => {
+      caller?.removeEventListener('abort', onCaller);
+      preempt.removeEventListener('abort', onPreempt);
+    };
+    const bargeIn = () => preempt.aborted && caller?.aborted !== true;
+    const settle = (message: AssistantMessage) => {
+      if (finished) return;
+      finished = true;
+      cleanup();
+      if (bargeIn()) {
+        out.push({ type: 'done', reason: 'stop', message: stoppedForPreempt(message, model) });
+      } else if (message.stopReason === 'error' || message.stopReason === 'aborted') {
+        out.push({
+          type: 'error',
+          reason: message.stopReason,
+          error: message,
+        });
+      } else {
+        out.push({ type: 'done', reason: message.stopReason, message });
+      }
+      out.end();
+    };
+    const preempted = new Promise<typeof PREEMPTED>((resolve) => {
+      if (preempt.aborted) resolve(PREEMPTED);
+      else preempt.addEventListener('abort', () => resolve(PREEMPTED), { once: true });
+    });
+
+    void (async () => {
+      let last: AssistantMessage | undefined;
+      try {
+        const stream = await inner(model, context, {
+          ...(options ?? {}),
+          signal: controller.signal,
+        });
+        const iterator = stream[Symbol.asyncIterator]();
+        for (;;) {
+          const next = await Promise.race([iterator.next(), preempted]);
+          if (finished) return;
+          if (next === PREEMPTED) {
+            releaseIterator(iterator);
+            settle(snapshot(last, model));
+            return;
+          }
+          if (next.done) break;
+          const event = next.value;
+          const partial = partialOf(event);
+          if (partial) last = partial;
+          if (event.type === 'done') {
+            settle(event.message);
+            return;
+          }
+          if (event.type === 'error') {
+            settle(event.error);
+            return;
+          }
+          out.push(event);
+        }
+        if (!finished) settle(await stream.result());
+      } catch (error) {
+        if (finished) return;
+        const message = snapshot(last, model);
+        message.stopReason = caller?.aborted ? 'aborted' : 'error';
+        message.errorMessage = error instanceof Error ? error.message : String(error);
+        settle(message);
+      }
+    })();
+
+    return out;
+  }) as StreamFn;
+}
+
+function stoppedForPreempt(message: AssistantMessage, model: Model<Api>): AssistantMessage {
+  const snapped = snapshot(message, model);
+  return {
+    ...snapped,
+    stopReason: 'stop',
+    errorMessage: undefined,
+    content: snapped.content.filter((block) => block.type !== 'toolCall'),
+  };
+}

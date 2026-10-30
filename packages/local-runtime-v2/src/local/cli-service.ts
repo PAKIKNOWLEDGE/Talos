@@ -428,6 +428,7 @@ export class CliService {
     const result = await this.requirePermissions().reply({
       requestIds: [req.requestId],
       decision: toPermissionDecision(req.reply),
+      ...(req.message ? { message: req.message } : {}),
     });
     return { success: result.processed.includes(req.requestId) };
   }

@@ -397,6 +397,7 @@ export interface TuiInteractionPort {
     agentName: string,
     requestId: string,
     decision: TuiPermissionDecision,
+    message?: string,
   ): Promise<boolean>;
 }
 

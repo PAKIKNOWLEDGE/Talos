@@ -336,16 +336,16 @@ function composerLabels(
     }
     if (attachment) {
       return [
-        `Message · ${attachment} · ${steer} steer · ${queue} queue`,
-        `Message · ${steer} steer · ${queue} queue`,
-        `${steer} steer · ${queue} queue`,
+        `Message · ${attachment} · ${steer} listen · ${queue} queue`,
+        `Message · ${steer} listen · ${queue} queue`,
+        `${steer} listen · ${queue} queue`,
         `${queue} queue`,
         'Message',
       ];
     }
     return [
-      `Message · ${steer} steer · ${queue} queue`,
-      `${steer} steer · ${queue} queue`,
+      `Message · ${steer} listen · ${queue} queue`,
+      `${steer} listen · ${queue} queue`,
       `${queue} queue`,
       'Message',
     ];
@@ -402,9 +402,9 @@ function composerInputIntentLabels(
   const compactSubject = `${presentation.title}${attachmentPart}`;
   if (followUp && presentation.action !== 'run') {
     return [
-      `${detailedSubject} · ${followUp.steer} steer · ${followUp.queue} queue`,
-      `${presentation.title} · ${followUp.steer} steer · ${followUp.queue} queue`,
-      `${followUp.steer} steer · ${followUp.queue} queue`,
+      `${detailedSubject} · ${followUp.steer} listen · ${followUp.queue} queue`,
+      `${presentation.title} · ${followUp.steer} listen · ${followUp.queue} queue`,
+      `${followUp.steer} listen · ${followUp.queue} queue`,
       `${followUp.queue} queue`,
       presentation.title,
     ];

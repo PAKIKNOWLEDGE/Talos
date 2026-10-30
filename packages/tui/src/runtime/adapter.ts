@@ -676,11 +676,13 @@ export class TuiRuntimeAdapter implements TuiRuntime {
     agentName: string,
     requestId: string,
     decision: TuiPermissionDecision,
+    message?: string,
   ): Promise<boolean> {
     return this.interactionAccess.replyPermission(
       agentName,
       requestId,
       decision,
+      message,
     );
   }
   listSavedPermissionRules(sessionId?: string): Promise<readonly TuiSavedPermissionRule[]> {

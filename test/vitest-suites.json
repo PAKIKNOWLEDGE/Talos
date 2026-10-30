@@ -125,6 +125,7 @@
       "packages/agent-core/test/unit/pi-turn-runner/llm-stream-timeout.test.ts",
       "packages/agent-core/test/unit/pi-turn-runner/request-image-limit.test.ts",
       "packages/local-runtime-v2/src/service/turn-system/agent-host/execution/executor.test.ts",
+      "packages/local-runtime-v2/src/service/turn-system/agent-host/runner/policy/local-turn-permission-gate.test.ts",
       "packages/local-runtime-v2/src/services.test.ts",
       "packages/local-runtime-v2/src/application/session/session-title-policy.test.ts",
       "packages/local-runtime-v2/test/unit/agent/builtin/catalog.test.ts",

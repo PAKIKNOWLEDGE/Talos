@@ -66,6 +66,7 @@ export class LocalPermissionApprovalService {
   private readonly pendingPermissionRequests = new Map<string, LocalPermissionRequest>();
   private readonly requestStates = new Map<string, PermissionRequestLifecycle>();
   private readonly origins = new Map<string, LocalPermissionRequestInput['origin']>();
+  private readonly denialGuidance = new Map<string, string>();
 
   constructor(private readonly deps: LocalPermissionApprovalServiceDeps) {}
 
@@ -138,6 +139,7 @@ export class LocalPermissionApprovalService {
   async reply(
     requestIds: readonly string[],
     decision: LocalPermissionDecision,
+    guidance?: string,
   ): Promise<{ processed: string[]; skipped: string[] }> {
     const processed: string[] = [];
     const skipped: string[] = [];
@@ -198,6 +200,8 @@ export class LocalPermissionApprovalService {
         emitAskReplyMetric(this.deps.metricsClient, decision);
         if (record.announced)
           emitAskWaitMetric(this.deps.metricsClient, this.deps.nowMs, record, 'replied');
+        const text = guidance?.trim();
+        if (decision === 'deny' && text) this.denialGuidance.set(requestId, text);
         this.settle(record, decision);
         processed.push(requestId);
         logger.info(
@@ -225,6 +229,12 @@ export class LocalPermissionApprovalService {
       }
     }
     return { processed, skipped };
+  }
+
+  takeDenialGuidance(requestId: string): string | undefined {
+    const text = this.denialGuidance.get(requestId);
+    this.denialGuidance.delete(requestId);
+    return text;
   }
 
   dismiss(requestId: string): boolean {

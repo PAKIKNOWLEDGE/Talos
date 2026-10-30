@@ -77,7 +77,7 @@ const CONTROL_KEYBINDINGS: Record<TuiActivityControl, string> = {
  * verbs stay short enough to keep the whole line inside a standard 80-column terminal.
  */
 const CONTROL_VERBS: Record<TuiActivityControl, string> = {
-  guide: 'steer',
+  guide: 'listen',
   details: 'details',
   interrupt: 'stop',
 };

@@ -325,6 +325,11 @@ export interface BlockedToolReasonInput {
    * denial so the model knows what the user vetoed.
    */
   trigger?: string;
+  /**
+   * Text the user typed while denying. Rendered on a `user` denial so the
+   * model sees why this call was rejected, not only that it was rejected.
+   */
+  guidance?: string;
 }
 
 /**
@@ -334,11 +339,13 @@ export interface BlockedToolReasonInput {
  * body reuses the already-localized `detail` / `trigger` text verbatim.
  */
 export function formatBlockedToolReason(input: BlockedToolReasonInput): string {
-  const { source, toolName, detail, trigger } = input;
+  const { source, toolName, detail, trigger, guidance } = input;
   const tag = `[permission:denied source=${source}]`;
   if (source === 'user') {
     const base = `${tag} User rejected the \`${toolName}\` call in the confirmation dialog.`;
-    return trigger ? `${base} Trigger: ${trigger}` : base;
+    const withTrigger = trigger ? `${base} Trigger: ${trigger}` : base;
+    const text = guidance?.trim();
+    return text ? `${withTrigger} Guidance: ${text}` : withTrigger;
   }
   const body = detail && detail.trim().length > 0 ? detail : `\`${toolName}\` call was denied.`;
   return `${tag} ${body}`;

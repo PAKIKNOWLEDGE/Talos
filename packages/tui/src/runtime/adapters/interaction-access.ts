@@ -194,11 +194,13 @@ export class TuiInteractionAccess {
     agentName: string,
     requestId: string,
     decision: TuiPermissionDecision,
+    message?: string,
   ): Promise<boolean> {
     const result = await this.cliService.replyPermission({
       name: agentName,
       requestId,
       reply: PERMISSION_REPLY[decision],
+      ...(message ? { message } : {}),
     });
     return result.success === true;
   }

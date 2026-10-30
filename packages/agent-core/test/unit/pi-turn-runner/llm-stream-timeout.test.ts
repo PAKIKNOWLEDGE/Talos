@@ -28,6 +28,7 @@ import {
   LLM_STREAM_TIMEOUT_MESSAGE_PREFIX,
   resolveLLMStreamTimeouts,
   withLLMStreamTimeouts,
+  withUserStreamPreempt,
 } from "../../../src/pi-turn-runner/llm-stream-timeout.js";
 import { PiTurnRunner } from "../../../src/pi-turn-runner/pi-turn-runner.js";
 
@@ -404,6 +405,42 @@ describe("hung OpenAI-compatible provider (real HTTP transport)", () => {
     const second = await runTurn("turn-after", "hi");
     expect(terminalStatus(second.events).status).toBe(RuntimeEventStatus.COMPLETED);
     expect(requests).toBe(3);
+  });
+});
+
+describe("withUserStreamPreempt", () => {
+  it("stops the current stream and drops a tool call that has not started", async () => {
+    const preempt = new AbortController();
+    const partial = {
+      ...assistant("looking outside the workspace"),
+      content: [
+        { type: "text" as const, text: "looking outside the workspace" },
+        { type: "toolCall" as const, id: "call-1", name: "bash", arguments: { command: "ls" } },
+      ],
+    };
+    const inner = (() => {
+      const stream = createAssistantMessageEventStream();
+      stream.push({ type: "start", partial });
+      return stream;
+    }) as StreamFn;
+    const wrapped = withUserStreamPreempt(inner, () => preempt.signal);
+    const stream = await wrapped(fakeModel(), CONTEXT, {});
+    const iterator = stream[Symbol.asyncIterator]();
+    const first = await iterator.next();
+    expect(first.value).toMatchObject({ type: "start" });
+    preempt.abort();
+    const events = [first.value];
+    for (;;) {
+      const next = await iterator.next();
+      if (next.done) break;
+      events.push(next.value);
+    }
+    const final = await stream.result();
+
+    expect(events.at(-1)).toMatchObject({ type: "done", reason: "stop" });
+    expect(final.stopReason).toBe("stop");
+    expect(final.content).toEqual([{ type: "text", text: "looking outside the workspace" }]);
+    expect(final.errorMessage).toBeUndefined();
   });
 });
 
