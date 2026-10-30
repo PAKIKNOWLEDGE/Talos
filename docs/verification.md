@@ -359,3 +359,9 @@ Scope: Welcome shows this version's first changelog bullets in order. `/rules` l
 - Focused Vitest: welcome changelog order, packaged 0.1.12 notes, permission rules panel scroll and filter, deny guidance on the hosted approval port.
 - `pnpm verify --profile windows` **PASS** at `1ddb427` (~80s): 10 gates on win32.
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-30 — **release: proceed** (no P0). Merged upstream since 0.1.11: #553 code-sdk, record-only.
+
+### Delivery (2026-10-30)
+
+- **Git:** `fix/saved-permission-rules` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `2985afe`, tag `v0.1.12`.
+- **npm:** `@pakiknowledge/tal0s-code@0.1.12` published from the tarball built at that tag. Registry processing may take a few minutes.
+- **GitHub Release:** [v0.1.12](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.12) with `.tar.gz` + `.sha256`.
