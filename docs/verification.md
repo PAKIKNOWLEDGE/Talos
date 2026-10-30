@@ -349,3 +349,13 @@ Scope: Collapsal Welcome shows titled full-width System notes. `/sessions` keeps
 - **Git:** `fix/collapsal-update-and-session-delete` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `f927902`, tag `v0.1.11`.
 - **npm:** `@pakiknowledge/tal0s-code@0.1.11` published from the tarball built at that tag. Registry processing may take a few minutes.
 - **GitHub Release:** [v0.1.11](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.11) with `.tar.gz` + `.sha256`.
+
+## Welcome note order, /rules, and deny guidance (0.1.12)
+
+Scope: Welcome shows this version's first changelog bullets in order. `/rules` lists, filters, and deletes saved permission rules, and the selection stays on screen. A typed deny reason is included in the tool denial the model reads. Enter during a live reply stops that reply and sends the draft. Classic remains the default skin.
+
+### Verification
+
+- Focused Vitest: welcome changelog order, packaged 0.1.12 notes, permission rules panel scroll and filter, deny guidance on the hosted approval port.
+- `pnpm verify --profile windows` **PASS** at `1ddb427` (~80s): 10 gates on win32.
+- Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-30 — **release: proceed** (no P0). Merged upstream since 0.1.11: #553 code-sdk, record-only.
