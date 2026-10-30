@@ -43,6 +43,7 @@ Do **not** merge upstream during a Talos feature slice unless the pre-release sc
 | 2026-10-23 | 0.1.9 (Collapsal permission footer) | Open: #500 #499 tooling/actions deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. Same open set as 0.1.8. No new merged P0. | **No** | **release: proceed** — record-only; local TUI footer. |
 | 2026-10-23 | 0.1.10 (pluggable web_search) | Open: #500 #499 tooling/actions deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. Same open set as 0.1.9. No new merged P0. | **No** | **release: proceed** — record-only; local search backends. |
 | 2026-10-28 | 0.1.11 (Collapsal notes + TUI session wipe) | Open: #550 autocompact, #538 execution-budget reminder, #528/#499 deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. No merged P0. | **No** | **release: proceed** — record-only; TUI-only. |
+| 2026-10-30 | 0.1.12 (welcome note order, /rules, deny guidance) | Open: #550 autocompact, #538 execution-budget reminder, #528/#499 deps, #364 Linux/XDG, #319 SQLite, #317 model persist, #307 BYOK env, #255 sandbox, #186 endpoint query, #146/#145 deps. Merged since 0.1.11: #553 code-sdk. No merged P0. | **No** | **release: proceed** — record-only; local TUI and permission reply. |
 
 ## References
 

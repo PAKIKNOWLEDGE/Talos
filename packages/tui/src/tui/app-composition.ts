@@ -52,6 +52,7 @@ import {
   extractTuiVersionChangelogEntries,
   readPackagedTuiChangelog,
   selectRandomTuiItems,
+  selectWelcomeChangelogEntries,
 } from './features/changelog/content.js';
 import { detectProcessTerminalCapabilities } from './platform/terminal-capabilities.js';
 import { createTuiTextClipboardWriter } from './platform/terminal-clipboard.js';
@@ -343,9 +344,8 @@ export function createTuiApplicationWidgets(options: {
       tips: selectRandomTuiItems(MINIMAX_CODE_WELCOME_DESIGN.tipPool, 3),
       ...(changelog
         ? {
-            changelogEntries: selectRandomTuiItems(
+            changelogEntries: selectWelcomeChangelogEntries(
               extractTuiVersionChangelogEntries(changelog, options.app.version),
-              3,
             ),
           }
         : {}),

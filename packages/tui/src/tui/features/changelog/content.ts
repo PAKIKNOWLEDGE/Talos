@@ -71,6 +71,17 @@ export function extractTuiVersionChangelogEntries(
   return parseMarkdownBulletEntries(section);
 }
 
+export const TUI_WELCOME_CHANGELOG_LIMIT = 3;
+
+/** Opening-screen notes are this version's first bullets, in changelog order. */
+export function selectWelcomeChangelogEntries<T>(
+  items: readonly T[],
+  count: number = TUI_WELCOME_CHANGELOG_LIMIT,
+): readonly T[] {
+  const limit = Math.min(items.length, Math.max(0, Math.trunc(count)));
+  return items.slice(0, limit);
+}
+
 export function selectRandomTuiItems<T>(
   items: readonly T[],
   count: number,

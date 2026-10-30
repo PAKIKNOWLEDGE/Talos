@@ -9,6 +9,14 @@ Internal refactors, test-only changes, and changes limited to other product surf
 
 Talos release notes are the first heading for that version. Upstream history below keeps older numbers, including another 0.1.4.
 
+## 0.1.12 · 2026-10-30
+
+### Improved
+
+- Welcome shows this version's notes in changelog order. It no longer picks three at random.
+- `/rules` lists saved allow, deny, and ask rules. d deletes the selected rule. f shows deny, then allow, then everything. The list scrolls with the selection.
+- Deny and guide sends the reason you type with the tool denial, so the model can read it. Enter during a live reply stops that reply and sends the draft. Alt+Enter still queues. Esc still stops the turn.
+
 ## 0.1.11 · 2026-10-28
 
 ### Improved

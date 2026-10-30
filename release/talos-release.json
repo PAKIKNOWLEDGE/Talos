@@ -20,7 +20,7 @@
     "releaseCliPullRequest": "pnpm release:cli may call gh pr create after the tag push; ignore that failure; do not retry; fast-forward release/vX.Y.Z into main with git",
     "welcomeChangelog": {
       "files": ["packages/tui/CHANGELOG.md", "packages/tui/CHANGELOG.zh-CN.md"],
-      "rule": "The first ## X.Y.Z heading wins. Put this release's Talos bullets first, then copy the previous Welcome bullets. Do not use underscore in those notes; Welcome strips it.",
+      "rule": "The first ## X.Y.Z heading wins. Welcome shows that heading's first bullets in order, not shuffled. Write this release's user-facing notes there; do not copy prior version bullets into it. Do not use underscore; Welcome strips it.",
       "test": "packages/tui/test/unit/tui-changelog-content.test.ts"
     },
     "never": [
