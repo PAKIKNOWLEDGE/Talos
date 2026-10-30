@@ -9,6 +9,7 @@ import type {
   TuiQuestionnaireRequest,
   TuiQueuedMessage,
   TuiQueueReceipt,
+  TuiSavedPermissionRule,
   TuiSessionUsage,
   TuiSessionUsageSummary,
   TuiSkillList,
@@ -390,6 +391,8 @@ export interface TuiInteractionPort {
   ): Promise<boolean>;
   dismissQuestionnaire(agentName: string, requestId: string): Promise<boolean>;
   listPendingPermissions(signal?: AbortSignal): Promise<TuiPendingPermission[]>;
+  listSavedPermissionRules?(sessionId?: string): Promise<readonly TuiSavedPermissionRule[]>;
+  removeSavedPermissionRule?(rule: TuiSavedPermissionRule): Promise<void>;
   replyPermission(
     agentName: string,
     requestId: string,
@@ -653,6 +656,7 @@ export type {
   TuiQuestionnaireRequest,
   TuiQueuedMessage,
   TuiQueueReceipt,
+  TuiSavedPermissionRule,
   TuiSessionUsage,
   TuiSessionUsageRow,
   TuiSessionUsageSummary,

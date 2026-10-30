@@ -159,6 +159,18 @@ export interface TuiPendingPermission {
   structuredPreview?: TuiStructuredPreview;
 }
 
+export interface TuiSavedPermissionRule {
+  readonly source: 'global' | 'agent' | 'session';
+  readonly destination: string;
+  readonly behavior: 'allow' | 'deny' | 'ask';
+  readonly toolName: string;
+  readonly ruleContent?: string;
+  readonly matcher?:
+    | { readonly kind: 'tool' }
+    | { readonly kind: 'command'; readonly pattern: string }
+    | { readonly kind: 'path'; readonly pattern: string; readonly actions?: readonly string[] };
+}
+
 export interface TuiModel {
   providerId: string;
   modelId: string;

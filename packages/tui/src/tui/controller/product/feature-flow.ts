@@ -29,6 +29,7 @@ import { TuiPluginManager } from '../../features/plugin/manager.js';
 import { TuiSessionManager } from '../../features/session/manager.js';
 import { TuiTranscriptPanel } from '../../features/transcript/panel.js';
 import { TuiChangelogPanel } from '../../features/changelog/panel.js';
+import { TuiPermissionRulesPanel } from '../../features/interaction/permission-rules-panel.js';
 import {
   extractTuiChangelogMarkdown,
   readPackagedTuiChangelog,
@@ -1372,6 +1373,38 @@ export class TuiFeatureFlow {
     await this.appendInspection('Permission inspection', async () =>
       formatTuiPermissions(await this.options.runtime.listPendingPermissions()),
     );
+  }
+
+  async showPermissionRules(): Promise<void> {
+    if (this.isStopped()) return;
+    const list = this.options.runtime.listSavedPermissionRules;
+    const remove = this.options.runtime.removeSavedPermissionRule;
+    if (!list || !remove) {
+      this.options.append('Saved permission rules are unavailable in this runtime.', 'warning');
+      return;
+    }
+    const sessionId = this.options.controller.snapshot().session?.sessionId;
+    let rules;
+    try {
+      rules = await list.call(this.options.runtime, sessionId);
+    } catch (error) {
+      this.options.append(
+        formatTuiActionFailure(error, {
+          summary: "Couldn't load saved permission rules.",
+          nextStep: 'Retry /rules.',
+        }),
+        'error',
+      );
+      return;
+    }
+    if (this.isStopped()) return;
+    const panel = new TuiPermissionRulesPanel({
+      rules,
+      onDelete: (rule) => remove.call(this.options.runtime, rule),
+      onCancel: () => this.closeInspectionPanel(panel),
+      requestRender: this.options.onChanged,
+    });
+    this.showInspectionPanel(panel);
   }
 
   async compactSession(customInstructions: string, hasLiveRun: boolean): Promise<void> {

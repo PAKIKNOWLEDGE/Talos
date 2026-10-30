@@ -60,6 +60,10 @@ import type {
   MutatePluginResult as MutatePluginResp,
   ReplyPermissionInput as ReplyPermissionReq,
   ReplyPermissionResult as ReplyPermissionResp,
+  ListSavedPermissionRulesInput as ListSavedPermissionRulesReq,
+  ListSavedPermissionRulesResult as ListSavedPermissionRulesResp,
+  RemoveSavedPermissionRuleInput as RemoveSavedPermissionRuleReq,
+  RemoveSavedPermissionRuleResult as RemoveSavedPermissionRuleResp,
   ReplyQuestionnaireInput as ReplyQuestionnaireReq,
   ReplyQuestionnaireResult as ReplyQuestionnaireResp,
   DismissQuestionnaireInput as DismissQuestionnaireReq,
@@ -426,6 +430,34 @@ export class CliService {
       decision: toPermissionDecision(req.reply),
     });
     return { success: result.processed.includes(req.requestId) };
+  }
+
+  async listSavedPermissionRules(
+    req: ListSavedPermissionRulesReq,
+    ctx: ProcessLocalContext = {},
+  ): Promise<ListSavedPermissionRulesResp> {
+    void ctx;
+    const permissions = this.requirePermissions();
+    if (!permissions.listSavedRules) {
+      throw new Error('Runtime does not expose saved permission rules.');
+    }
+    const rules = await permissions.listSavedRules({
+      ...(req.sessionId ? { sessionId: req.sessionId } : {}),
+    });
+    return { rules };
+  }
+
+  async removeSavedPermissionRule(
+    req: RemoveSavedPermissionRuleReq,
+    ctx: ProcessLocalContext = {},
+  ): Promise<RemoveSavedPermissionRuleResp> {
+    void ctx;
+    const permissions = this.requirePermissions();
+    if (!permissions.removeSavedRule) {
+      throw new Error('Runtime does not expose saved permission rules.');
+    }
+    await permissions.removeSavedRule(req.rule);
+    return { success: true };
   }
 
   listQueueMessages(

@@ -14,6 +14,7 @@ import type {
   TuiQueueReceipt,
   TuiQueuedMessage,
   TuiQueueSnapshot,
+  TuiSavedPermissionRule,
 } from '../port.js';
 import { buildTuiToolPreview } from '../tool-preview.js';
 import { normalizeTuiQuestionnaireRequest } from '../event-normalizer.js';
@@ -200,6 +201,17 @@ export class TuiInteractionAccess {
       reply: PERMISSION_REPLY[decision],
     });
     return result.success === true;
+  }
+
+  async listSavedPermissionRules(sessionId?: string): Promise<readonly TuiSavedPermissionRule[]> {
+    const response = await this.cliService.listSavedPermissionRules({
+      ...(sessionId ? { sessionId } : {}),
+    });
+    return response.rules;
+  }
+
+  async removeSavedPermissionRule(rule: TuiSavedPermissionRule): Promise<void> {
+    await this.cliService.removeSavedPermissionRule({ rule });
   }
 }
 

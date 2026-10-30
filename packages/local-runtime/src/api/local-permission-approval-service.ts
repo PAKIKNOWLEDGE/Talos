@@ -20,6 +20,25 @@ import {
 import type { ChannelPermissionOutboundPort } from '../channels/permission-bridge.js';
 import type { MetricsClient } from '../common/metrics.js';
 
+/** Deny must not fall back to a whole-tool `*` or tool matcher. Allow-always still may. */
+export function rulesToPersist(
+  record: Pick<
+    LocalPermissionRequest,
+    'ruleContents' | 'ruleMatchers' | 'persistWholeToolRuleOnReply'
+  >,
+  decision: LocalPermissionDecision,
+): Array<{ content: string; matcher?: NonNullable<LocalPermissionRequest['ruleMatchers']>[number] }> {
+  const pairs = record.ruleContents.map((content, index) => ({
+    content,
+    ...(record.ruleMatchers?.[index] ? { matcher: record.ruleMatchers[index] } : {}),
+  }));
+  if (decision === 'deny') {
+    return pairs.filter((rule) => rule.matcher?.kind !== 'tool' && rule.content !== '*');
+  }
+  if (pairs.length > 0) return pairs;
+  return record.persistWholeToolRuleOnReply ? [{ content: '*' }] : [];
+}
+
 export interface LocalPermissionApprovalServiceDeps {
   agentName: string;
   nowMs: () => number;
@@ -137,14 +156,9 @@ export class LocalPermissionApprovalService {
         );
         continue;
       }
-      const ruleContents =
-        record.ruleContents.length > 0
-          ? record.ruleContents
-          : record.persistWholeToolRuleOnReply
-            ? ['*']
-            : [];
+      const persistedRules = rulesToPersist(record, decision);
       try {
-        if (ruleContents.length > 0) {
+        if (persistedRules.length > 0) {
           const global = decision === 'allowAlways';
           const persistenceSource = global ? 'global' : 'session';
           logger.info(
@@ -153,7 +167,7 @@ export class LocalPermissionApprovalService {
               session_id: record.sessionId,
               lifecycle: 'rule_persist_start',
               source: persistenceSource,
-              rule_count: ruleContents.length,
+              rule_count: persistedRules.length,
             },
             'permission.lifecycle',
           );
@@ -162,14 +176,12 @@ export class LocalPermissionApprovalService {
             source: global ? 'global' : 'session',
             destination: global ? 'global' : record.sessionId,
             behavior: decision === 'deny' ? 'deny' : 'allow',
-            rules: ruleContents.map((ruleContent, index) => ({
+            rules: persistedRules.map((rule) => ({
               tool_name:
                 decision === 'deny'
                   ? record.toolName
                   : localPermissionRuleToolName(record.toolName),
-              ...(record.ruleMatchers?.[index]
-                ? { matcher: record.ruleMatchers[index] }
-                : { rule_content: ruleContent }),
+              ...(rule.matcher ? { matcher: rule.matcher } : { rule_content: rule.content }),
             })),
           });
           logger.info(
@@ -178,7 +190,7 @@ export class LocalPermissionApprovalService {
               session_id: record.sessionId,
               lifecycle: 'rule_persisted',
               source: persistenceSource,
-              rule_count: ruleContents.length,
+              rule_count: persistedRules.length,
             },
             'permission.lifecycle',
           );

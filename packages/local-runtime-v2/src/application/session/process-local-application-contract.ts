@@ -212,6 +212,10 @@ export interface LocalRuntimeApplication {
       requestIds: readonly string[];
       decision: "allowAlways" | "allowOnce" | "deny";
     }): Promise<{ processed: readonly string[]; skipped: readonly string[] }>;
+    listSavedRules?(input?: {
+      sessionId?: string;
+    }): Promise<readonly LocalSavedPermissionRule[]>;
+    removeSavedRule?(rule: LocalSavedPermissionRule): Promise<void>;
   };
   readonly account?: {
     getStatus(input?: {
@@ -325,4 +329,20 @@ export interface LocalRuntimePendingPermission {
   readonly reason: string;
   readonly allowAlwaysSupported: boolean;
   readonly createdAt: number;
+}
+
+export interface LocalSavedPermissionRule {
+  readonly source: 'global' | 'agent' | 'session';
+  readonly destination: string;
+  readonly behavior: 'allow' | 'deny' | 'ask';
+  readonly toolName: string;
+  readonly ruleContent?: string;
+  readonly matcher?:
+    | { readonly kind: 'tool' }
+    | { readonly kind: 'command'; readonly pattern: string }
+    | {
+        readonly kind: 'path';
+        readonly pattern: string;
+        readonly actions?: readonly string[];
+      };
 }

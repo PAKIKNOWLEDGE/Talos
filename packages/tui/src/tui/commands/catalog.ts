@@ -495,6 +495,12 @@ const COMMAND_SOURCES: readonly TuiCommandSource[] = [
     inputWhen: (context) => context.hasPendingInteraction === true,
   },
   {
+    name: 'rules',
+    description: 'View and delete saved allow, deny, and ask rules',
+    category: 'Decision',
+    discoverability: 'primary',
+  },
+  {
     name: 'permissions',
     description: 'Show pending Runtime-owned permission requests',
     category: 'Decision',

@@ -106,6 +106,8 @@
       "packages/tui/test/unit/tui-scrollbar-interaction.test.ts",
       "packages/tui/test/unit/tui-image-preview.test.ts",
       "packages/tui/test/unit/tui-session-manager.test.ts",
+      "packages/tui/test/unit/permission-rules-panel.test.ts",
+      "packages/local-runtime/test/unit/permission-deny-persistence.test.ts",
       "packages/tui/test/unit/tui-shell-block.test.ts",
       "packages/tui/test/unit/tui-status-line-items.test.ts",
       "packages/tui/test/unit/tui-terminal-image-paste.test.ts",

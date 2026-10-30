@@ -717,6 +717,33 @@ function createPeripheralApplication(
           [...requestIds],
           decision,
         ),
+      listSavedRules: async ({ sessionId } = {}) => {
+        const rules = await host.apiHost.permissionRouteContext().permissionRules.listRules({
+          ...(sessionId ? { sessionId } : {}),
+        });
+        return rules.map((rule) => ({
+          source: rule.source,
+          destination: rule.destination,
+          behavior: rule.ruleBehavior,
+          toolName: rule.ruleValue.toolName,
+          ...(rule.ruleValue.ruleContent ? { ruleContent: rule.ruleValue.ruleContent } : {}),
+          ...(rule.ruleValue.matcher ? { matcher: rule.ruleValue.matcher } : {}),
+        }));
+      },
+      removeSavedRule: (rule) =>
+        host.apiHost.permissionRouteContext().permissionRules.applyUpdate({
+          type: 'removeRules',
+          source: rule.source,
+          destination: rule.destination,
+          behavior: rule.behavior,
+          rules: [
+            {
+              tool_name: rule.toolName,
+              ...(rule.ruleContent ? { rule_content: rule.ruleContent } : {}),
+              ...(rule.matcher ? { matcher: rule.matcher } : {}),
+            },
+          ],
+        }),
     },
     account: {
       getStatus: ({ sessionId, model } = {}) =>

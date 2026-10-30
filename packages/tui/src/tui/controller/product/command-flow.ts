@@ -1373,6 +1373,7 @@ export class TuiCommandFlow {
         }
       },
       permissions: async () => this.options.featureFlow.showPermissions(),
+      rules: async () => this.options.featureFlow.showPermissionRules(),
       usage: async () => this.options.featureFlow.showSessionUsage(),
       export: async ({ args }) => this.options.featureFlow.exportCurrentTranscript(args),
       transcript: () => this.options.featureFlow.showTranscript(),

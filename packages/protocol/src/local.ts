@@ -1611,6 +1611,34 @@ export interface ListPendingPermissionsResult {
   requests?: PendingPermissionItem[];
 }
 
+export interface SavedPermissionRule {
+  readonly source: 'global' | 'agent' | 'session';
+  readonly destination: string;
+  readonly behavior: 'allow' | 'deny' | 'ask';
+  readonly toolName: string;
+  readonly ruleContent?: string;
+  readonly matcher?:
+    | { readonly kind: 'tool' }
+    | { readonly kind: 'command'; readonly pattern: string }
+    | { readonly kind: 'path'; readonly pattern: string; readonly actions?: readonly string[] };
+}
+
+export interface ListSavedPermissionRulesInput {
+  sessionId?: string;
+}
+
+export interface ListSavedPermissionRulesResult {
+  readonly rules: readonly SavedPermissionRule[];
+}
+
+export interface RemoveSavedPermissionRuleInput {
+  rule: SavedPermissionRule;
+}
+
+export interface RemoveSavedPermissionRuleResult {
+  success?: boolean;
+}
+
 export interface QuestionnaireImage {
   src: string;
   alt?: string;

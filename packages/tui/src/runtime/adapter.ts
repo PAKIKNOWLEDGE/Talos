@@ -47,6 +47,7 @@ import type {
   TuiPermissionDecision,
   TuiQuestionnaireReplyAnswer,
   TuiQuestionnaireRequest,
+  TuiSavedPermissionRule,
   TuiQueueReceipt,
   TuiQueuedMessage,
   TuiQueueSnapshot,
@@ -681,6 +682,12 @@ export class TuiRuntimeAdapter implements TuiRuntime {
       requestId,
       decision,
     );
+  }
+  listSavedPermissionRules(sessionId?: string): Promise<readonly TuiSavedPermissionRule[]> {
+    return this.interactionAccess.listSavedPermissionRules(sessionId);
+  }
+  removeSavedPermissionRule(rule: TuiSavedPermissionRule): Promise<void> {
+    return this.interactionAccess.removeSavedPermissionRule(rule);
   }
 
   watchEvents(signal: AbortSignal): AsyncGenerator<TuiRuntimeEvent> {
