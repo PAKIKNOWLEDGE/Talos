@@ -375,3 +375,9 @@ Scope: `/model` Alt+I saves image input for one custom or gateway model. An exac
 - Focused Vitest passed: catalog image inheritance, model list flag, image-input save, model picker Alt+I, packaged 0.1.13 notes. `pnpm typecheck` passed.
 - `pnpm verify --profile windows` was **not** run. Emergency npm publish, maintainer request.
 - Upstream scan was **not** repeated. See [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-31.
+
+### Delivery (2026-10-31)
+
+- **Git:** `fix/custom-model-image` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `413fbdc`, tag `v0.1.13`.
+- **npm:** `@pakiknowledge/tal0s-code@0.1.13` published from the tarball built at that tag. Registry processing may take a few minutes.
+- **GitHub Release:** [v0.1.13](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.13) with `.tar.gz` + `.sha256`.
