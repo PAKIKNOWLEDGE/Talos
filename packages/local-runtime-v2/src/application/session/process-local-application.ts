@@ -180,6 +180,8 @@ export function createProcessLocalApplication(
         const outcome = await options.modelProvider.providers.testModel(providerId, modelId);
         return { success: outcome.ok, status: outcome.status };
       },
+      setModelImageSupport: ({ providerId, modelId, enabled }) =>
+        options.modelProvider.providers.setModelImageSupport({ providerId, modelId, enabled }),
     },
     workspace: options.workspace,
   };

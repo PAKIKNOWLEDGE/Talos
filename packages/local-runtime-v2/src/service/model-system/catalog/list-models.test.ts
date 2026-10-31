@@ -2,6 +2,10 @@ import { ThinkingLevel } from '@mavis/protocol';
 import { describe, expect, it } from 'vitest';
 
 import type { LocalCustomProviderConfig, LocalRuntimeConfig } from '../contracts.js';
+import {
+  noteCatalogVision,
+  resetCatalogVisionForTests,
+} from '../resolution/catalog-model-vision.js';
 import { resolveThinkingLevel } from '../resolution/model-ref.js';
 import {
   buildModelEntry,
@@ -212,6 +216,7 @@ describe('model catalog entry helpers', () => {
       contextWindowOptions: [100_000, 200_000],
       maxOutputTokens: 32_000,
       modalities: { input: ['text', 'image'], output: ['text'] },
+      supportsImage: true,
       effortOptions: ['low', 'high'],
       defaultEffort: 'high',
       supportedVariants: ['thinking', ''],
@@ -234,6 +239,7 @@ describe('model catalog entry helpers', () => {
       }),
     ).toMatchObject({
       displayName: 'historical',
+      supportsImage: false,
       thinkingConfig: { mode: 'switchable', default_value: 'false' },
     });
 
@@ -444,5 +450,61 @@ describe('TUI BYOK think toggle across persisted model shapes', () => {
 
   it('offers no toggle when the model cannot reason', () => {
     expect(thinkingConfigFor('preset-without-reasoning')).toBeUndefined();
+  });
+
+  it('inherits catalog image input only when a custom model never declared vision', () => {
+    noteCatalogVision({
+      deepseek: {
+        models: {
+          'deepseek-v4.1-flash': { modalities: { input: ['text', 'image'] } },
+          'deepseek-v4-pro': { modalities: { input: ['text'] } },
+        },
+      },
+    });
+    try {
+      const entry = {
+        selected: false,
+        providerSource: 'custom_provider' as const,
+        providerKind: 'custom' as const,
+        providerName: 'Gateway',
+      };
+      expect(
+        buildModelEntry({
+          ...entry,
+          providerId: 'custom_provider:wb-proxy',
+          modelId: 'deepseek-v4.1-flash',
+          model: {},
+        }).supportsImage,
+      ).toBe(true);
+      expect(
+        buildModelEntry({
+          ...entry,
+          providerId: 'custom_provider:wb-proxy',
+          modelId: 'deepseek-v4-pro',
+          model: {},
+        }).supportsImage,
+      ).toBe(false);
+      expect(
+        buildModelEntry({
+          ...entry,
+          providerId: 'custom_provider:wb-proxy',
+          modelId: 'deepseek-v4.1-flash',
+          model: { capabilities: { support_image: false } },
+        }).supportsImage,
+      ).toBe(false);
+      expect(
+        buildModelEntry({
+          ...entry,
+          providerId: 'minimax',
+          modelId: 'deepseek-v4.1-flash',
+          model: {},
+          providerSource: 'provider',
+          providerKind: 'minimax-managed',
+          providerName: 'MiniMax',
+        }).supportsImage,
+      ).toBe(false);
+    } finally {
+      resetCatalogVisionForTests();
+    }
   });
 });

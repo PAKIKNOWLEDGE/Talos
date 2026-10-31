@@ -2617,6 +2617,54 @@ describe('connection tests', () => {
     expect(h.testCalls.map((call) => call.target.minimaxM3ThinkingMode)).toEqual(['on', 'off']);
   });
 
+  it('persists image input for one custom model without a connection test', async () => {
+    const h = makeHarness();
+    const created = await h.service.createUserProvider({
+      name: 'Gateway',
+      baseUrl: 'https://gateway.example/v1',
+      apiKey: CUSTOM_KEY,
+      models: [
+        {
+          modelId: 'deepseek-v4.1-flash',
+          displayName: 'Flash',
+          modalities: { input: ['text', 'video'], output: ['text'] },
+        },
+      ],
+    });
+    h.testCalls.length = 0;
+
+    await h.service.setModelImageSupport({
+      providerId: created.providerId,
+      modelId: 'deepseek-v4.1-flash',
+      enabled: true,
+    });
+
+    const providerKey = created.providerId.replace('custom_provider:', '');
+    expect(h.config.custom_provider?.[providerKey]?.models?.['deepseek-v4.1-flash']).toMatchObject({
+      name: 'Flash',
+      capabilities: { support_image: true },
+      modalities: { input: ['text', 'video', 'image'], output: ['text'] },
+    });
+    expect(h.testCalls).toEqual([]);
+
+    await h.service.setModelImageSupport({
+      providerId: created.providerId,
+      modelId: 'deepseek-v4.1-flash',
+      enabled: false,
+    });
+    expect(h.config.custom_provider?.[providerKey]?.models?.['deepseek-v4.1-flash']).toMatchObject({
+      capabilities: { support_image: false },
+      modalities: { input: ['text', 'video'], output: ['text'] },
+    });
+    await expect(
+      h.service.setModelImageSupport({
+        providerId: created.providerId,
+        modelId: 'missing',
+        enabled: true,
+      }),
+    ).rejects.toMatchObject({ status: 404, code: 'MODEL_NOT_FOUND' });
+  });
+
   it('rejects testing providers without a key or unknown providers', async () => {
     const h = makeHarness();
     await expect(h.service.testProvider('minimax_api')).rejects.toMatchObject({ status: 400 });

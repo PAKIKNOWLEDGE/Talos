@@ -276,6 +276,8 @@ export interface TuiConfigurationPort extends McodeProviderRuntimePort {
   selectSessionModel(model: TuiModelSelection, sessionId: string): Promise<boolean>;
   /** Stars or unstars a model; resolves false when favorites are unavailable. */
   setModelFavorite?(model: TuiModelSelection, favorite: boolean): Promise<boolean>;
+  /** Saves image input for one custom model; resolves false when the host cannot persist it. */
+  setModelImageSupport?(model: TuiModelSelection, enabled: boolean): Promise<boolean>;
 }
 
 export interface TuiAccountStatusOptions {

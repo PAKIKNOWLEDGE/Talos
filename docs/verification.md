@@ -365,3 +365,13 @@ Scope: Welcome shows this version's first changelog bullets in order. `/rules` l
 - **Git:** `fix/saved-permission-rules` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `2985afe`, tag `v0.1.12`.
 - **npm:** `@pakiknowledge/tal0s-code@0.1.12` published from the tarball built at that tag. Registry processing may take a few minutes.
 - **GitHub Release:** [v0.1.12](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.12) with `.tar.gz` + `.sha256`.
+
+## Custom model image input (0.1.13)
+
+Scope: `/model` Alt+I saves image input for one custom or gateway model. An exact catalog id inherits image input only when every source agrees. Classic remains the default skin.
+
+### Verification
+
+- Focused Vitest passed: catalog image inheritance, model list flag, image-input save, model picker Alt+I, packaged 0.1.13 notes. `pnpm typecheck` passed.
+- `pnpm verify --profile windows` was **not** run. Emergency npm publish, maintainer request.
+- Upstream scan was **not** repeated. See [upstream-pr-watch.md](upstream-pr-watch.md) 2026-10-31.

@@ -59,11 +59,11 @@ Configuration and sessions are stored in `~/.talos` by default (`%USERPROFILE%\.
 
 Run `talos update` or enter `/update` to check for a new version. Talos shows the upgrade command; installation is always manual. To upgrade, run the npm install command above again.
 
-Release notes: [0.1.12](docs/releases/0.1.12.md) · [0.1.11](docs/releases/0.1.11.md) · [0.1.10](docs/releases/0.1.10.md) · [0.1.9](docs/releases/0.1.9.md).
+Release notes: [0.1.13](docs/releases/0.1.13.md) · [0.1.12](docs/releases/0.1.12.md) · [0.1.11](docs/releases/0.1.11.md) · [0.1.10](docs/releases/0.1.10.md).
 
 ## Release status
 
-Talos **0.1.12** is the current CLI line (`@pakiknowledge/tal0s-code`). This patch shows Welcome notes in changelog order, adds `/rules` to view, filter, and delete saved permission rules, and sends a typed deny reason to the model. Enter during a live reply stops that reply and sends the draft. Recent 0.1.x work also includes Collapsal System notes, `/sessions` permanent delete, pluggable Web search, and a user-configured LLM permission judge in Auto. Classic stays the default skin. Windows x64 release checks passed on this line. See [verification records](docs/verification.md) and [current status](docs/status.md).
+Talos **0.1.13** is the current CLI line (`@pakiknowledge/tal0s-code`). This patch lets a custom or gateway model turn image input on or off in `/model` with Alt+I, and saves that choice on the model. Classic stays the default skin. See [verification records](docs/verification.md) and [current status](docs/status.md).
 
 The desktop GUI lives in the companion repository `T3rra-C0d3-Talos`.
 

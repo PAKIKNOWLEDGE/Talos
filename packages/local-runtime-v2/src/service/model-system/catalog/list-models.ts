@@ -17,6 +17,7 @@ import {
   parseProviderId,
 } from '../resolution/model-key.js';
 import { MANAGED_MINIMAX_PROVIDER_ID, MINIMAX_API_PROVIDER_ID } from '../identity.js';
+import { resolvedImageSupport } from '../resolution/catalog-model-vision.js';
 import { type ModelCacheData, type ModelCacheStatusEntry } from './model-cache.js';
 import { byokModelTestStatus } from './config-fingerprint.js';
 import {
@@ -213,6 +214,7 @@ export function buildModelEntry(input: BuildModelEntryInput): ModelProviderModel
     ...modelLimitFields(model),
     ...modelContextWindowOptionHintFields(input),
     ...modelCapabilityFields(model, input.providerKind === 'minimax-managed'),
+    supportsImage: resolvedImageSupport(input.providerId, input.modelId, model),
     ...modelThinkingFields(input),
     ...modelStatusFields(input.status),
   };

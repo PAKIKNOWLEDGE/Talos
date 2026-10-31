@@ -316,6 +316,11 @@ export interface LocalRuntimeApplication {
     delete(input: { providerId: string }): Promise<void>;
     testProvider(input: { providerId: string }): Promise<unknown>;
     testModel(input: { providerId: string; modelId: string }): Promise<unknown>;
+    setModelImageSupport(input: {
+      providerId: string;
+      modelId: string;
+      enabled: boolean;
+    }): Promise<void>;
   };
 }
 

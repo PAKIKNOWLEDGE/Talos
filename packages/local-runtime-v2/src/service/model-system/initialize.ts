@@ -7,7 +7,9 @@ import {
 } from '@mavis/config';
 
 import { LocalModelCache } from './catalog/model-cache.js';
+import { rememberCatalogVisionSource } from './resolution/catalog-model-vision.js';
 import { ProviderPresetCatalog } from './catalog/provider-presets/provider-presets.service.js';
+import { resolveProviderPresetLocalCatalogPath } from './catalog/provider-presets/provider-presets.repository.js';
 import { CodexOAuthManager } from './codex-oauth.js';
 import { ModelDiscoveryClient } from './connectivity/discover-models.js';
 import { ModelConnectionTester } from './connectivity/test-connection.js';
@@ -57,8 +59,10 @@ export function createLocalModelSystemConfigPort(read: () => LocalRuntimeConfig 
 
 /** Composes the single Runtime V2 owner for model resolution and Provider management. */
 export function initializeModelSystem(options: InitializeModelSystemOptions): ModelSystemOwner {
+  const dataDir = options.config.read().dataDir;
+  rememberCatalogVisionSource(resolveProviderPresetLocalCatalogPath({ dataDir }));
   const providerPresets = new ProviderPresetCatalog({
-    dataDir: options.config.read().dataDir,
+    dataDir,
     previewSecret: process.env.PREVIEW_SECRET,
     lane: process.env.MAVIS_PLUGIN_CLOUD_LANE,
   });

@@ -1107,6 +1107,68 @@ describe("TuiModelPicker favorites", () => {
     expect(rendered.indexOf("kimi-k3")).toBeLessThan(rendered.indexOf("deepseek-v4-pro"));
   });
 
+  it("toggles image input on a custom model and leaves built-in rows alone", async () => {
+    const onToggleImage = vi.fn(async () => true);
+    const picker = new TuiModelPicker(
+      [
+        {
+          providerId: "custom_provider:wb-proxy",
+          providerName: "Gateway",
+          providerSource: "custom_provider",
+          providerKind: "custom",
+          modelId: "deepseek-v4.1-flash",
+          displayName: "deepseek-v4.1-flash",
+        },
+        {
+          providerId: "minimax",
+          providerName: "MiniMax",
+          providerSource: "provider",
+          modelId: "MiniMax-M3",
+        },
+      ],
+      vi.fn(),
+      vi.fn(),
+      { onToggleImage },
+    );
+
+    expect(lines(picker).join("\n")).toContain("alt+i image off");
+    expect(lines(picker).join("\n")).not.toContain(" · image");
+    picker.handleInput("\x1bi");
+    expect(onToggleImage).toHaveBeenCalledWith(
+      expect.objectContaining({ modelId: "deepseek-v4.1-flash" }),
+      true,
+    );
+    expect(lines(picker).join("\n")).toContain("alt+i image on");
+    expect(lines(picker).join("\n")).toContain(" · image");
+
+    picker.handleInput("\x1b[B");
+    expect(lines(picker).join("\n")).not.toContain("alt+i");
+    picker.handleInput("\x1bi");
+    expect(onToggleImage).toHaveBeenCalledTimes(1);
+  });
+
+  it("rolls image input back when the save fails", async () => {
+    const onToggleImage = vi.fn(async () => false);
+    const picker = new TuiModelPicker(
+      [
+        {
+          providerId: "custom_provider:wb-proxy",
+          providerSource: "custom_provider",
+          modelId: "deepseek-v4.1-flash",
+        },
+      ],
+      vi.fn(),
+      vi.fn(),
+      { onToggleImage },
+    );
+    picker.handleInput("\x1bi");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    const rendered = lines(picker).join("\n");
+    expect(rendered).toContain("alt+i image off");
+    expect(rendered).toContain("Couldn't update image input.");
+    expect(rendered).not.toContain(" · image");
+  });
+
   it("hides the toggle when favorites are unavailable and keeps ctrl+s out of search", () => {
     const picker = new TuiModelPicker(catalog(), vi.fn(), vi.fn());
     picker.handleInput(CTRL_S);

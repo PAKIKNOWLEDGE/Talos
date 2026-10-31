@@ -120,6 +120,19 @@ export class TuiProductAccess {
     });
   }
 
+  async setModelImageSupport(
+    model: TuiModelSelection,
+    enabled: boolean,
+  ): Promise<boolean> {
+    const service = this.context.service("model.image");
+    if (!service.setModelImageSupport) return false;
+    return service.setModelImageSupport({
+      providerId: model.providerId,
+      modelId: model.modelId,
+      enabled,
+    });
+  }
+
   selectSessionModel(
     model: TuiModelSelection,
     sessionId: string,

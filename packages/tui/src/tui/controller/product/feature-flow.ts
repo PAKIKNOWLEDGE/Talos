@@ -748,6 +748,15 @@ export class TuiFeatureFlow {
                 ) ?? false,
             }
           : {}),
+        ...(this.options.runtime.setModelImageSupport
+          ? {
+              onToggleImage: (model: TuiModel, enabled: boolean) =>
+                this.options.runtime.setModelImageSupport?.(
+                  { providerId: model.providerId, modelId: model.modelId },
+                  enabled,
+                ) ?? false,
+            }
+          : {}),
         onDeleteProvider: async (providerId) => {
           if (
             this.modelPicker !== picker ||

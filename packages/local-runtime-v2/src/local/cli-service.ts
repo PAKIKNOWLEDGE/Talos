@@ -827,6 +827,20 @@ export class CliService {
     );
   }
 
+  /** Persists image input for one custom model. Resolves false when unavailable. */
+  async setModelImageSupport(
+    input: Parameters<
+      NonNullable<
+        LocalRuntimeApplication["modelProviders"]
+      >["setModelImageSupport"]
+    >[0],
+  ): Promise<boolean> {
+    const providers = this.requireCapability("modelProviders", "Model Provider");
+    if (!providers.setModelImageSupport) return false;
+    await providers.setModelImageSupport(input);
+    return true;
+  }
+
   deleteUserModelProvider(
     input: Parameters<
       NonNullable<LocalRuntimeApplication["modelProviders"]>["delete"]

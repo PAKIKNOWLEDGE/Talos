@@ -19,6 +19,7 @@ import {
   OPENPLATFORM_THINKING_VARIANTS_CAPABILITY,
   type OpenPlatformThinkingVariants,
 } from './openplatform-thinking.js';
+import { resolvedImageSupport } from './catalog-model-vision.js';
 import {
   normalizeLocalFileApiCapabilities,
   normalizeLocalMultimodalLimitCapabilities,
@@ -82,13 +83,13 @@ export function modelRefForModel(
     return {
       provider,
       model_id: modelId,
-      capabilities: capabilitiesFromModelConfig(modelConfig),
+      capabilities: modelRefCapabilities(provider, modelId, modelConfig),
       ...modelLimitsFromConfig(modelConfig),
       ...resolveManagedParameters(modelConfig, options),
     };
   }
   const selectedEffort = resolveEffectiveThinkingEffort(provider, modelId, modelConfig, options);
-  const capabilities = capabilitiesFromModelConfig(modelConfig) ?? {};
+  const capabilities = modelRefCapabilities(provider, modelId, modelConfig);
   if (selectedEffort) {
     Reflect.set(capabilities, SELECTED_THINKING_EFFORT_CAPABILITY, selectedEffort);
   }
@@ -483,6 +484,16 @@ export function resolveModelThinkingProtocol(
     ...base,
     requestPatch: { reasoning: { effort } },
   };
+}
+
+function modelRefCapabilities(
+  provider: string,
+  modelId: string,
+  modelConfig: LocalModelConfig | undefined,
+): LocalModelRefCapabilities {
+  const capabilities = capabilitiesFromModelConfig(modelConfig);
+  capabilities.support_image = resolvedImageSupport(provider, modelId, modelConfig);
+  return capabilities;
 }
 
 export function capabilitiesFromModelConfig(

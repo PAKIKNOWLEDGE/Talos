@@ -30,6 +30,24 @@ describe('Talos welcome changelog', () => {
     ).toEqual(['session wipe', 'system notes', 'web search']);
   });
 
+  it('reads the packaged English notes for 0.1.13', () => {
+    const source = readPackagedTuiChangelog('en-US');
+    expect(source).toBeTruthy();
+    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.13');
+    expect(entries[0]).toContain('Alt+I');
+    expect(entries[0]).toContain('image input');
+    expect(selectWelcomeChangelogEntries(entries)[0]).toBe(entries[0]);
+  });
+
+  it('reads the packaged Chinese notes for 0.1.13', () => {
+    const source = readPackagedTuiChangelog('zh-CN');
+    expect(source).toBeTruthy();
+    const entries = extractTuiVersionChangelogEntries(source ?? '', '0.1.13');
+    expect(entries[0]).toContain('Alt+I');
+    expect(entries[0]).toContain('图像输入');
+    expect(selectWelcomeChangelogEntries(entries)[0]).toBe(entries[0]);
+  });
+
   it('reads the packaged English notes for 0.1.12', () => {
     const source = readPackagedTuiChangelog('en-US');
     expect(source).toBeTruthy();

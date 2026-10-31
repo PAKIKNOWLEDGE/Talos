@@ -1,6 +1,11 @@
 import { DEFAULT_THINKING_MODEL_IDS } from '@earendil-works/pi-ai';
 import { ThinkingLevel, ThinkingMode } from '@mavis/protocol';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+
+import {
+  noteCatalogVision,
+  resetCatalogVisionForTests,
+} from './catalog-model-vision.js';
 
 import {
   capabilitiesFromModelConfig,
@@ -766,6 +771,54 @@ describe('model capability helpers', () => {
     expect(capabilities).not.toHaveProperty('max_video_bytes_inline');
     expect(capabilities).not.toHaveProperty('max_request_body_bytes');
     expect(capabilities).not.toHaveProperty('max_attachments_count');
+  });
+});
+
+describe('catalog image inheritance', () => {
+  afterEach(() => {
+    resetCatalogVisionForTests();
+  });
+
+  it('gives an undeclared custom model catalog image input and keeps an explicit choice', () => {
+    noteCatalogVision({
+      gateway: {
+        models: {
+          'deepseek-v4-flash': { modalities: { input: ['text', 'image'] } },
+          'deepseek-v4.1-flash': { modalities: { input: ['text', 'image'] } },
+        },
+      },
+      other: {
+        models: {
+          'deepseek-v4-flash': { modalities: { input: ['text'] } },
+        },
+      },
+    });
+
+    expect(
+      modelRefForModel('custom_provider:wb-proxy', 'deepseek-v4.1-flash', {}).capabilities
+        ?.support_image,
+    ).toBe(true);
+    expect(
+      modelRefForModel('custom_provider:wb-proxy', 'deepseek-v4-flash', {}).capabilities
+        ?.support_image,
+    ).toBe(false);
+    expect(
+      modelRefForModel('custom_provider:wb-proxy', 'unknown-text-model', {}).capabilities
+        ?.support_image,
+    ).toBe(false);
+    expect(
+      modelRefForModel('minimax', 'deepseek-v4.1-flash', {}).capabilities?.support_image,
+    ).toBe(false);
+    expect(
+      modelRefForModel('custom_provider:wb-proxy', 'deepseek-v4.1-flash', {
+        capabilities: { support_image: false },
+      }).capabilities?.support_image,
+    ).toBe(false);
+    expect(
+      modelRefForModel('custom_provider:wb-proxy', 'deepseek-v4.1-flash', {
+        modalities: { input: ['text'] },
+      }).capabilities?.support_image,
+    ).toBe(false);
   });
 });
 

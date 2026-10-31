@@ -8,6 +8,7 @@ import {
   fetchPinnedProviderIdsConfig,
   MODELS_DEV_URL,
 } from './provider-presets.client.js';
+import { noteCatalogVision } from '../../resolution/catalog-model-vision.js';
 import {
   readProviderPresetSnapshotCandidates,
   resolveProviderPresetLocalCatalogPath,
@@ -339,6 +340,7 @@ function parseCatalogSnapshot(value: unknown): ParsedModelsDevCatalogSnapshot {
     throw new Error('Invalid models.dev catalog snapshot');
   }
   const iconBaseUrl = parseSnapshotIconBaseUrl(value.iconBaseUrl);
+  noteCatalogVision(value.catalog);
   const presets = parseModelsDevProviderPresets(
     value.catalog,
     process.env.TALOS_NEUTRAL_RUNTIME === '1' ? 'https://models.dev/logos/' : iconBaseUrl,

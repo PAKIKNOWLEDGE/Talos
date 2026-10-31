@@ -199,6 +199,8 @@ export interface TuiModel {
   providerSource?: string;
   providerKind?: string;
   apiFormat?: string;
+  /** Effective image input. Catalog matches count even when the saved model never declared it. */
+  supportsImage?: boolean;
   status?: {
     state?: string;
     lastTestedAt?: number;

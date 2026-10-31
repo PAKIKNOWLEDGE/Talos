@@ -334,6 +334,8 @@ export interface ModelProviderModelEntry {
   providerName: string;
   apiFormat?: string;
   modalities?: { input?: string[]; output?: string[] };
+  /** Effective image input, including a catalog match the saved model never declared. */
+  supportsImage: boolean;
   status?: ModelCacheStatusView;
 }
 

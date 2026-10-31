@@ -9,6 +9,13 @@ Internal refactors, test-only changes, and changes limited to other product surf
 
 Talos release notes are the first heading for that version. Upstream history below keeps older numbers, including another 0.1.4.
 
+## 0.1.13 · 2026-10-31
+
+### Improved
+
+- Custom and gateway models can turn image input on or off in /model with Alt+I. The choice is saved on that model, so a later turn sends images instead of omitting them.
+- A custom model whose id matches the catalog on every source, and that source says it accepts images, gets image input without the toggle. A conflicting or unknown id stays text until you turn it on.
+
 ## 0.1.12 · 2026-10-30
 
 ### Improved

@@ -21,6 +21,7 @@ import {
   createUserProvider as createUserProviderOperation,
   deleteUserProvider as deleteUserProviderOperation,
   duplicateUserProvider as duplicateUserProviderOperation,
+  setCustomModelImageSupport as setCustomModelImageSupportOperation,
   updateUserProvider as updateUserProviderOperation,
 } from './service-custom-provider-operations.js';
 import {
@@ -220,6 +221,14 @@ export class LocalModelProviderService {
     expectedMaxOutputTokens: number;
   }): Promise<ModelProviderTestOutcome> {
     return updateUserModelParametersOperation(this.context, input);
+  }
+
+  async setModelImageSupport(input: {
+    providerId: string;
+    modelId: string;
+    enabled: boolean;
+  }): Promise<void> {
+    return setCustomModelImageSupportOperation(this.context, input);
   }
 
   async deleteUserProvider(input: { providerId: string }): Promise<void> {

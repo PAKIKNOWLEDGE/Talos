@@ -39,6 +39,7 @@ const ADD_PROVIDER_ITEM_VALUE = '\u0000add-provider';
 /** Favorite rows repeat a provider row, so they need a distinct list value. */
 const FAVORITE_ROW_PREFIX = '\u0000favorite\u0000';
 const FAVORITE_UPDATE_FAILED = "Couldn't update favorites. Press ctrl+s to retry.";
+const IMAGE_UPDATE_FAILED = "Couldn't update image input. Press alt+i to retry.";
 
 interface ModelGroup {
   readonly label: string;
@@ -59,7 +60,10 @@ export class TuiModelPicker implements Component, Focusable {
   private readonly modelByKey = new Map<ModelKey, TuiModel>();
   /** Starred models in the order they were added; new favorites go last. */
   private favoriteKeys: ModelKey[];
+  /** Optimistic image-input overrides, keyed like favorites, until the save settles. */
+  private readonly imageOverrides = new Map<ModelKey, boolean>();
   private favoriteStatus: string | undefined;
+  private imageStatus: string | undefined;
   private deletingProviderId: string | undefined;
   private deleteStatus: { readonly tone: 'info' | 'error'; readonly text: string } | undefined;
   private busy = false;
@@ -81,6 +85,8 @@ export class TuiModelPicker implements Component, Focusable {
       onDeleteProvider?: (providerId: string) => Promise<void>;
       /** Persists a favorite toggle; `false` or a rejection rolls the row back. */
       onToggleFavorite?: (model: TuiModel, favorite: boolean) => Promise<boolean | void> | boolean | void;
+      /** Persists image input for a custom model; `false` or a rejection rolls the row back. */
+      onToggleImage?: (model: TuiModel, enabled: boolean) => Promise<boolean | void> | boolean | void;
       requestRender?: () => void;
     } = {},
     /** Think effort already stored for the current Session, when known. */
@@ -124,6 +130,15 @@ export class TuiModelPicker implements Component, Focusable {
     const model = this.focusedModel();
     if (model && this.availability.onToggleFavorite && matchesKey(data, Key.ctrl('s'))) {
       this.toggleFavorite(model);
+      return;
+    }
+    if (
+      model &&
+      isCustomProviderModel(model) &&
+      this.availability.onToggleImage &&
+      matchesKey(data, Key.alt('i'))
+    ) {
+      this.toggleImage(model);
       return;
     }
     if (
@@ -213,6 +228,9 @@ export class TuiModelPicker implements Component, Focusable {
       ...(layout.bodyHeight >= 3 && this.favoriteStatus
         ? [chalk.hex(colors.warning)(this.favoriteStatus)]
         : []),
+      ...(layout.bodyHeight >= 3 && this.imageStatus
+        ? [chalk.hex(colors.warning)(this.imageStatus)]
+        : []),
       ...(layout.bodyHeight >= 2 ? [`${searchPrompt}${search}`] : []),
       ...(layout.bodyHeight >= 4 &&
       this.visibleModels().length === 0 &&
@@ -288,6 +306,41 @@ export class TuiModelPicker implements Component, Focusable {
     );
   }
 
+  private imageEnabled(model: TuiModel): boolean {
+    return this.imageOverrides.get(modelKey(model)) ?? model.supportsImage === true;
+  }
+
+  private toggleImage(model: TuiModel): void {
+    const onToggle = this.availability.onToggleImage;
+    if (!onToggle || !isCustomProviderModel(model)) return;
+    const key = modelKey(model);
+    const enabled = !this.imageEnabled(model);
+    this.imageOverrides.set(key, enabled);
+    this.imageStatus = undefined;
+    this.list = this.createList();
+    this.availability.requestRender?.();
+
+    const rollback = () => {
+      this.imageOverrides.set(key, !enabled);
+      this.imageStatus = IMAGE_UPDATE_FAILED;
+      this.list = this.createList();
+      this.availability.requestRender?.();
+    };
+    let result: ReturnType<typeof onToggle>;
+    try {
+      result = onToggle(model, enabled);
+    } catch {
+      rollback();
+      return;
+    }
+    void Promise.resolve(result).then(
+      (saved) => {
+        if (saved === false) rollback();
+      },
+      rollback,
+    );
+  }
+
   private contextChoice(model: TuiModel): number | undefined {
     return this.contextDrafts.get(modelKey(model)) ?? model.contextLimit;
   }
@@ -346,7 +399,11 @@ export class TuiModelPicker implements Component, Focusable {
         value,
         label: `${model.selected ? '● ' : ''}${star ? '★ ' : ''}${unavailable ? '[login] ' : ''}${sanitizeTerminalText(model.displayName ?? model.modelId)}`,
         description: formatModelDescription(
-          { ...model, contextLimit: this.contextChoice(model) },
+          {
+            ...model,
+            contextLimit: this.contextChoice(model),
+            supportsImage: this.imageEnabled(model),
+          },
           unavailable,
         ),
         groupLabel,
@@ -468,6 +525,9 @@ export class TuiModelPicker implements Component, Focusable {
         ? this.isFavorite(model)
           ? ' · ctrl+s unfavorite'
           : ' · ctrl+s favorite'
+        : '') +
+      (model && isCustomProviderModel(model) && this.availability.onToggleImage
+        ? ` · alt+i image ${this.imageEnabled(model) ? 'on' : 'off'}`
         : '') +
       (model && isCustomProviderModel(model) && this.availability.onDeleteProvider
         ? ' · ctrl+d delete provider'
@@ -675,6 +735,7 @@ function formatModelDescription(model: TuiModel, unavailable: boolean): string {
     model.variant && model.variant !== 'thinking' ? sanitizeTerminalText(model.variant) : undefined,
     efforts.length > 0 ? `${String(efforts.length)} efforts` : undefined,
     model.contextLimit ? `${formatContextWindow(model.contextLimit)} ctx` : undefined,
+    model.supportsImage ? 'image' : undefined,
   ]
     .filter((value): value is string => Boolean(value))
     .join(' · ');

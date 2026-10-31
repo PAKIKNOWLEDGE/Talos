@@ -4,6 +4,7 @@ import {
   type LocalByokConfigDraft,
   type LocalCustomProviderConfig,
   type LocalCustomProvidersConfig,
+  type LocalModelConfig,
   type UserModelInputView,
 } from '../contracts.js';
 import { generateProviderKey } from './provider-key.js';
@@ -280,4 +281,39 @@ export async function deleteUserProvider(
     resetUnavailableCustomDefaultModel(draft);
   });
   await context.deps.cache.removeProvider(`${CUSTOM_PROVIDER_ID_PREFIX}${providerKey}`);
+}
+
+/** Persists one custom model's image-input choice without a connection test. */
+export async function setCustomModelImageSupport(
+  context: ModelProviderServiceContext,
+  input: { providerId: string; modelId: string; enabled: boolean },
+): Promise<void> {
+  const providerKey = context.requireExistingProviderKey(input.providerId);
+  const modelId = input.modelId.trim();
+  if (!modelId) {
+    throw new LocalModelProviderError(404, 'Model not found', 'MODEL_NOT_FOUND');
+  }
+  const enabled = input.enabled === true;
+  let updated = false;
+  await context.deps.updateByokConfig((draft) => {
+    const tree = (draft.custom_provider ?? {}) as LocalCustomProvidersConfig;
+    const model = tree[providerKey]?.models?.[modelId];
+    if (!model) return;
+    applyImageSupport(model, enabled);
+    draft.custom_provider = tree as Record<string, unknown>;
+    updated = true;
+  });
+  if (!updated) {
+    throw new LocalModelProviderError(404, 'Model not found', 'MODEL_NOT_FOUND');
+  }
+}
+
+function applyImageSupport(model: LocalModelConfig, enabled: boolean): void {
+  const kept = (model.modalities?.input ?? []).filter((item) => item !== 'image');
+  const input = kept.includes('text') ? kept : (['text', ...kept] as typeof kept);
+  model.modalities = {
+    ...model.modalities,
+    input: enabled ? [...input, 'image'] : input,
+  };
+  model.capabilities = { ...model.capabilities, support_image: enabled };
 }
