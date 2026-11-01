@@ -1,6 +1,6 @@
 {
   "name": "talos-cli",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "private": true,
   "type": "module",
   "description": "Standalone Talos CLI/TUI with provider-neutral models, tools, plugins and ACP.",
