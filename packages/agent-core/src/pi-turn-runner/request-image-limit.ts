@@ -1,4 +1,11 @@
-import type { Api, Message, Model } from '@earendil-works/pi-ai';
+import { Buffer } from 'node:buffer';
+
+import type { Api, ImageContent, Message, Model } from '@earendil-works/pi-ai';
+
+import {
+  fitRequestImage,
+  type RequestImageFitBudget,
+} from './request-image-fit.js';
 
 /**
  * Default ceiling on images in one provider request when the model declares
@@ -23,6 +30,8 @@ export const DEFAULT_MAX_IMAGES_PER_REQUEST = 20;
  */
 export interface ModelRequestImageLimit {
   readonly maxImagesPerRequest?: number;
+  /** Declared whole-request byte cap (`capabilities.max_request_body_bytes`). */
+  readonly maxRequestBodyBytes?: number;
 }
 
 /** Normalize a configured image ceiling; anything but a positive integer is ignored. */
@@ -68,6 +77,14 @@ export interface RequestImageLimitResult {
   readonly messages: Message[];
   /** Number of image blocks replaced by a placeholder in this request copy. */
   readonly omittedCount: number;
+  /** Images re-encoded smaller on this request copy. Canonical history is unchanged. */
+  readonly shrunkCount: number;
+}
+
+export interface OutboundImageFitOptions extends RequestImageFitBudget {
+  readonly maxImages: number;
+  /** UTF-8 JSON byte budget for the projected messages. Unset means no byte drop. */
+  readonly maxSerializedBytes?: number;
 }
 
 /**
@@ -86,7 +103,7 @@ export function limitRequestImages(
   const limit = Math.max(0, Math.floor(maxImages));
   let total = 0;
   for (const message of messages) total += imageBlockCount(message);
-  if (total <= limit) return { messages: [...messages], omittedCount: 0 };
+  if (total <= limit) return { messages: [...messages], omittedCount: 0, shrunkCount: 0 };
 
   let toOmit = total - limit;
   const toolCallPaths = collectToolCallPaths(messages);
@@ -106,7 +123,76 @@ export function limitRequestImages(
     });
     return { ...message, content } as Message;
   });
-  return { messages: projected, omittedCount: total - limit };
+  return { messages: projected, omittedCount: total - limit, shrunkCount: 0 };
+}
+
+/**
+ * Shrink oversized PNG/JPEG images on a request copy, then keep the newest
+ * images that fit both the count ceiling and an optional JSON byte budget.
+ * Callers pass the original array; this function allocates replacement blocks.
+ */
+export function fitOutboundImages(
+  messages: readonly Message[],
+  options: OutboundImageFitOptions,
+): RequestImageLimitResult {
+  const shrunk = shrinkOutboundImages(messages, options);
+  const counted = limitRequestImages(shrunk.messages, options.maxImages);
+  let current = counted.omittedCount === 0 ? shrunk.messages : counted.messages;
+  let omittedCount = counted.omittedCount;
+  const budget = options.maxSerializedBytes;
+  if (budget !== undefined && budget > 0) {
+    while (imageBlockTotal(current) > 0 && serializedMessageBytes(current) > budget) {
+      const dropped = limitRequestImages(shrunk.messages, imageBlockTotal(current) - 1);
+      current = dropped.messages;
+      omittedCount = dropped.omittedCount;
+    }
+  }
+  if (shrunk.shrunkCount === 0 && omittedCount === 0) {
+    return { messages: messages as Message[], omittedCount: 0, shrunkCount: 0 };
+  }
+  return { messages: current, omittedCount, shrunkCount: shrunk.shrunkCount };
+}
+
+/** UTF-8 JSON size of a provider message list. Image payloads dominate this number. */
+export function serializedMessageBytes(messages: readonly Message[]): number {
+  try {
+    const serialized = JSON.stringify(messages);
+    return Buffer.byteLength(serialized ?? '', 'utf8');
+  } catch {
+    return Number.POSITIVE_INFINITY;
+  }
+}
+
+function imageBlockTotal(messages: readonly Message[]): number {
+  let total = 0;
+  for (const message of messages) total += imageBlockCount(message);
+  return total;
+}
+
+function shrinkOutboundImages(
+  messages: readonly Message[],
+  budget: RequestImageFitBudget,
+): { messages: Message[]; shrunkCount: number } {
+  let shrunkCount = 0;
+  let changed = false;
+  const projected = messages.map((message) => {
+    if (!Array.isArray(message.content)) return message;
+    let messageChanged = false;
+    const content = message.content.map((block) => {
+      if (!isImageBlock(block)) return block;
+      const image = block as ImageContent;
+      if (typeof image.data !== 'string' || image.data.length === 0) return block;
+      const fitted = fitRequestImage(image.data, image.mimeType, budget);
+      if (fitted.data === image.data && fitted.mimeType === image.mimeType) return block;
+      messageChanged = true;
+      shrunkCount += 1;
+      return { type: 'image' as const, data: fitted.data, mimeType: fitted.mimeType };
+    });
+    if (!messageChanged) return message;
+    changed = true;
+    return { ...message, content } as Message;
+  });
+  return { messages: changed ? projected : [...messages], shrunkCount };
 }
 
 function omittedImageText(limit: number, path: string | undefined): string {

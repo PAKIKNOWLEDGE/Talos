@@ -74,11 +74,14 @@
     "@earendil-works/pi-ai": "workspace:*",
     "@earendil-works/pi-coding-agent": "workspace:*",
     "@sinclair/typebox": "^0.34.0",
+    "jpeg-js": "0.4.4",
+    "pngjs": "6.0.0",
     "zod": "^3"
   },
   "devDependencies": {
     "@mavis/config": "workspace:^",
     "@types/node": "^20",
+    "@types/pngjs": "^6.0.5",
     "tsx": "^4",
     "typescript": "^5",
     "vitest": "^2"

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { StreamFn } from "@earendil-works/pi-agent-core";
 import type {
   AssistantMessage,
@@ -22,6 +22,11 @@ import {
   type LLMRequestSettledEvent,
   type LLMRetryEvent,
 } from "../../../src/pi-turn-runner/llm-retry.js";
+import {
+  noteRequestBodySuccess,
+  requestBodyCeilingBytes,
+  resetRequestBodyBudgetForTests,
+} from "../../../src/pi-turn-runner/request-body-budget.js";
 
 function fakeModel(provider = "fake-provider"): Model<any> {
   return {
@@ -157,6 +162,10 @@ function retryOptions(overrides: Record<string, unknown> = {}) {
 }
 
 describe("withLLMRetry", () => {
+  beforeEach(() => {
+    resetRequestBodyBudgetForTests();
+  });
+
   it("observes each physical provider request, including a retry that fails first", async () => {
     let attempts = 0;
     const physical: LLMRequestSettledEvent[] = [];
@@ -1040,6 +1049,66 @@ describe("withLLMRetry", () => {
       "waiting",
       "cancelled",
     ]);
+  });
+
+  it("retries once under the last successful size when a larger body loses the connection", async () => {
+    const route = fakeModel("custom_provider:fixture");
+    route.baseUrl = "https://budget.invalid/v1";
+    noteRequestBodySuccess(route, 80);
+    const image = { type: "image" as const, data: "A".repeat(2_000), mimeType: "image/webp" };
+    const messages = [
+      { role: "user" as const, content: [{ type: "text" as const, text: "old" }, image], timestamp: 1 },
+      { role: "user" as const, content: [{ type: "text" as const, text: "new" }, { ...image }], timestamp: 2 },
+    ];
+    const seen: number[] = [];
+    let attempts = 0;
+    const inner = (async (_model, context) => {
+      attempts += 1;
+      seen.push(
+        context.messages.reduce(
+          (total, message) =>
+            total +
+            (Array.isArray(message.content)
+              ? message.content.filter((block) => block.type === "image").length
+              : 0),
+          0,
+        ),
+      );
+      if (attempts === 1) throw new Error("Connection error.");
+      const final = assistant("stop", [{ type: "text", text: "ok" }]);
+      return stream([{ type: "done", reason: "stop", message: final }], final);
+    }) as StreamFn;
+    const wrapped = withLLMRetry(inner, retryOptions());
+
+    const result = await wrapped(route, { messages }, undefined);
+    await collectEvents(result);
+
+    expect(attempts).toBe(2);
+    expect(seen).toEqual([2, 0]);
+    expect(requestBodyCeilingBytes(route)).toBe(80);
+  });
+
+  it("does not keep a ceiling when the smaller retry also loses the connection", async () => {
+    const route = fakeModel("custom_provider:fixture");
+    route.baseUrl = "https://budget-outage.invalid/v1";
+    noteRequestBodySuccess(route, 80);
+    const image = { type: "image" as const, data: "B".repeat(2_000), mimeType: "image/webp" };
+    let attempts = 0;
+    const inner = (async () => {
+      attempts += 1;
+      throw new Error("Connection error.");
+    }) as StreamFn;
+    const wrapped = withLLMRetry(inner, retryOptions({ policy: { maxRetries: 0, baseDelayMs: 1, maxDelayMs: 1 } }));
+
+    await expect(
+      wrapped(
+        route,
+        { messages: [{ role: "user", content: [image], timestamp: 1 }] },
+        undefined,
+      ),
+    ).rejects.toThrow("Connection error.");
+    expect(attempts).toBe(2);
+    expect(requestBodyCeilingBytes(route)).toBeUndefined();
   });
 });
 

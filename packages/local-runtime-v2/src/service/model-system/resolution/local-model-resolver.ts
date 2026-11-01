@@ -206,7 +206,14 @@ export class LocalModelResolver implements LocalModelResolverLike {
     const maxRequestBodyBytes = normalizeResolvedRequestBodyAdmissionLimit(
       input.modelRef.capabilities?.max_request_body_bytes,
     );
-    const model = buildResolvedModel({ input, contextWindow, maxTokens, baseUrl, thinking });
+    const model = buildResolvedModel({
+      input,
+      contextWindow,
+      maxTokens,
+      baseUrl,
+      thinking,
+      maxRequestBodyBytes,
+    });
     const streamFn = resolveModelStream(input, this.options.streamFn);
     const fileApiGatewayAuth = input.managedProvider
       ? resolveLocalFileApiGatewayAuth(input.authContext, input.routingContext)
@@ -624,8 +631,9 @@ function buildResolvedModel(scope: {
   readonly maxTokens: number;
   readonly baseUrl: string;
   readonly thinking: ResolvedThinking;
+  readonly maxRequestBodyBytes?: number;
 }): Model<Api> {
-  const { input, contextWindow, maxTokens, baseUrl, thinking } = scope;
+  const { input, contextWindow, maxTokens, baseUrl, thinking, maxRequestBodyBytes } = scope;
   const thinkingLevelMap = resolvedThinkingLevelMap(thinking);
   const compat = resolvedModelCompatibility(input, thinking);
   const maxImagesPerRequest =
@@ -644,9 +652,10 @@ function buildResolvedModel(scope: {
     contextWindow,
     maxTokens,
     ...(compat ? { compat } : {}),
-    // Request builders read this from the model so agent turns, compaction
-    // checkpoints and footprint estimates share one image ceiling.
+    // Request builders read these from the model so agent turns, compaction
+    // checkpoints and footprint estimates share one image ceiling and body cap.
     ...(maxImagesPerRequest === undefined ? {} : { maxImagesPerRequest }),
+    ...(maxRequestBodyBytes === undefined ? {} : { maxRequestBodyBytes }),
   };
   return model;
 }

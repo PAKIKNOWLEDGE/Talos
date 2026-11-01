@@ -403,6 +403,8 @@ test('release command bumps source before tagging, pushes a release branch and o
   assert.equal(f.git('rev-parse', 'HEAD'), f.base);
   const result = releaseCli({ root: f.root, version: '1.2.4', openPullRequest: request => prs.push(request) });
   assert.equal(f.git('branch', '--show-current'), 'release/v1.2.4');
+  assert.equal(f.git('log', '-1', '--format=%s'), 'chore: release Talos 1.2.4');
+  assert.match(f.git('cat-file', '-p', 'v1.2.4'), /Talos 1\.2\.4/);
   assert.equal(f.git('cat-file', '-t', 'v1.2.4'), 'tag');
   assert.equal(f.git('rev-parse', 'v1.2.4^{commit}'), result.revision);
   assert.equal(f.git('rev-parse', 'origin/main'), f.base);

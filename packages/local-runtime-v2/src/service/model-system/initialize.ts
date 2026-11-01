@@ -1,3 +1,6 @@
+import { join } from 'node:path';
+
+import { bindRequestBodyBudgetFile } from '@mavis/agent-core/pi-turn-runner';
 import {
   compareAndSetLocalModelContext,
   getConfig,
@@ -60,6 +63,7 @@ export function createLocalModelSystemConfigPort(read: () => LocalRuntimeConfig 
 /** Composes the single Runtime V2 owner for model resolution and Provider management. */
 export function initializeModelSystem(options: InitializeModelSystemOptions): ModelSystemOwner {
   const dataDir = options.config.read().dataDir;
+  bindRequestBodyBudgetFile(join(dataDir, 'v2', 'request-body-budget.json'));
   rememberCatalogVisionSource(resolveProviderPresetLocalCatalogPath({ dataDir }));
   const providerPresets = new ProviderPresetCatalog({
     dataDir,

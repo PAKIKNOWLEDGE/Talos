@@ -74,6 +74,18 @@ export function newAgent(turn: turnState): Agent {
           '[pi-turn-runner] kept provider-bound images whose dimensions could not be determined',
         );
       }
+      if (outbound.shrunkImageCount > 0) {
+        turn.logger.info(
+          {
+            event: 'outbound_images_shrunk',
+            session_id: turn.input.sessionId,
+            turn_id: turn.input.turnId,
+            provider: turn.llm.model.provider,
+            shrunk_image_count: outbound.shrunkImageCount,
+          },
+          '[pi-turn-runner] re-encoded provider-bound images to fit the per-image limit',
+        );
+      }
       if (outbound.omittedImageCount > 0) {
         // History keeps every image; only this request copy drops the oldest
         // ones so it stays within the model's per-request image limit.
@@ -84,6 +96,7 @@ export function newAgent(turn: turnState): Agent {
             turn_id: turn.input.turnId,
             provider: turn.llm.model.provider,
             omitted_image_count: outbound.omittedImageCount,
+            shrunk_image_count: outbound.shrunkImageCount,
             max_images_per_request: resolveMaxImagesPerRequest(turn.llm.model),
           },
           '[pi-turn-runner] replaced older provider-bound images with placeholders',

@@ -75,12 +75,26 @@ export {
 } from './outbound-message-normalizer.js';
 export {
   DEFAULT_MAX_IMAGES_PER_REQUEST,
+  fitOutboundImages,
   limitRequestImages,
   knownMaxImagesPerRequestForBaseUrl,
   normalizeMaxImagesPerRequest,
   resolveMaxImagesPerRequest,
+  serializedMessageBytes,
 } from './request-image-limit.js';
-export type { ModelRequestImageLimit, RequestImageLimitResult } from './request-image-limit.js';
+export type {
+  ModelRequestImageLimit,
+  OutboundImageFitOptions,
+  RequestImageLimitResult,
+} from './request-image-limit.js';
+export {
+  bindRequestBodyBudgetFile,
+  resetRequestBodyBudgetForTests,
+} from './request-body-budget.js';
+export {
+  DEFAULT_REQUEST_IMAGE_MAX_BYTES,
+  DEFAULT_REQUEST_IMAGE_MAX_EDGE_PX,
+} from './request-image-fit.js';
 export { toPiUserMessage } from './agent.js';
 export {
   createToolContextHistogramBucketsByName,

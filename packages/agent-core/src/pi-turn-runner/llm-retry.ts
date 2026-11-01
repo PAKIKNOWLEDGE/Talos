@@ -17,6 +17,15 @@ import {
   type NormalizedLLMError,
 } from '@mavis/shared/llm-error-classifier';
 
+import {
+  adoptSmallerRequestBody,
+  noteRequestBodySuccess,
+  prepareOutboundBody,
+  requestBodyCeilingBytes,
+  requestBodyFailureIsOutage,
+  restoreRequestBodyCeiling,
+} from './request-body-budget.js';
+
 function isByokProvider(provider: string): boolean {
   return provider === 'minimax_api' || provider.startsWith('custom_provider:');
 }
@@ -153,6 +162,10 @@ interface RetryCallState {
   retryTriggered: boolean;
   retryReason?: LLMRetryReason;
   requestAttempts: number;
+  /** One immediate smaller-body attempt, outside the provider retry budget. */
+  bodyBudgetRetried: boolean;
+  ceilingPending: boolean;
+  previousCeiling?: number;
 }
 
 interface CallSettlementContext {
@@ -197,12 +210,17 @@ export function withLLMRetry(inner: StreamFn, input: LLMRetryOptions): StreamFn 
   return (async (model, context, options) => {
     const callId = input.generateCallId?.() ?? defaultCallId();
     const callIdentity = {};
-    const callState: RetryCallState = { retryTriggered: false, requestAttempts: 0 };
+    const callState: RetryCallState = {
+      retryTriggered: false,
+      requestAttempts: 0,
+      bodyBudgetRetried: false,
+      ceilingPending: false,
+    };
     let retryStartedAtMs: number | undefined;
     let requestAttempt = 1;
     let lastFailure: RetryableFailure | undefined;
 
-    while (requestAttempt <= policy.maxRetries + 1) {
+    while (requestAttempt <= policy.maxRetries + 1 + (callState.bodyBudgetRetried ? 1 : 0)) {
       if (options?.signal?.aborted) {
         const error = abortError(options.signal);
         notifyCallSettled(
@@ -211,10 +229,11 @@ export function withLLMRetry(inner: StreamFn, input: LLMRetryOptions): StreamFn 
         );
         throw error;
       }
+      const prepared = prepareOutboundBody(model, context);
       const preflight = await preflightAttempt(
         inner,
         model,
-        context,
+        prepared.context,
         options,
         nowMs,
         callIdentity,
@@ -224,6 +243,7 @@ export function withLLMRetry(inner: StreamFn, input: LLMRetryOptions): StreamFn 
       );
       callState.requestAttempts = requestAttempt;
       if (preflight.kind === 'committed') {
+        noteRequestBodySuccess(model, prepared.bytes);
         if (requestAttempt > 1) {
           await notify(input.observer, {
             sessionId: input.sessionId,
@@ -243,6 +263,31 @@ export function withLLMRetry(inner: StreamFn, input: LLMRetryOptions): StreamFn 
           state: callState,
           signal: options?.signal,
         });
+      }
+      if (
+        callState.ceilingPending &&
+        requestBodyFailureIsOutage(preflight.failure.normalized)
+      ) {
+        restoreRequestBodyCeiling(model, callState.previousCeiling);
+        callState.ceilingPending = false;
+      }
+      if (!callState.bodyBudgetRetried) {
+        const previousCeiling = requestBodyCeilingBytes(model);
+        if (
+          adoptSmallerRequestBody(
+            model,
+            prepared.context.messages,
+            prepared.bytes,
+            preflight.failure.normalized,
+          )
+        ) {
+          callState.bodyBudgetRetried = true;
+          callState.ceilingPending = true;
+          callState.previousCeiling = previousCeiling;
+          discardAttempt(preflight.failure);
+          requestAttempt += 1;
+          continue;
+        }
       }
       if (preflight.kind === 'terminal') {
         if (requestAttempt > 1 && lastFailure) {

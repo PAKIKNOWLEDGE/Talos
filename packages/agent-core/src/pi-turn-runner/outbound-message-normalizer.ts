@@ -11,7 +11,8 @@ import type {
 import { convertToLlm } from '@earendil-works/pi-coding-agent/messages';
 
 import { imageDimensions } from './image-dimensions.js';
-import { limitRequestImages, resolveMaxImagesPerRequest } from './request-image-limit.js';
+import { requestBodyBudgetBytes } from './request-body-budget.js';
+import { fitOutboundImages, resolveMaxImagesPerRequest } from './request-image-limit.js';
 
 const PRIOR_THINKING_OPEN = '<|prior-thinking|>';
 const PRIOR_THINKING_CLOSE = '<|/prior-thinking|>';
@@ -55,9 +56,11 @@ export function projectAgentMessagesForModel(
   undeterminedImageMimeTypes: Record<string, number>;
   /**
    * Older image blocks replaced by a placeholder so the request stays within
-   * the model's per-request image limit (see `request-image-limit.ts`).
+   * the model's per-request image limit and any learned or declared body budget.
    */
   omittedImageCount: number;
+  /** PNG/JPEG images re-encoded smaller on this request copy. */
+  shrunkImageCount: number;
 } {
   const providerVisible = messages.filter((message) => !isHostOnlyMessage(message));
   const compatible = removeOrphanToolResults(
@@ -73,11 +76,15 @@ export function projectAgentMessagesForModel(
     .map((message) => projectUndersizedImageBlocks(message, undetermined));
   // Last, so the ceiling counts exactly the images that would be sent: video
   // frames projected to images count, undersized placeholders do not.
-  const limited = limitRequestImages(projected, resolveMaxImagesPerRequest(targetModel));
+  const limited = fitOutboundImages(projected, {
+    maxImages: resolveMaxImagesPerRequest(targetModel),
+    maxSerializedBytes: requestBodyBudgetBytes(targetModel),
+  });
   return {
     removedCount: compatible.removedCount,
     messages: limited.messages,
     omittedImageCount: limited.omittedCount,
+    shrunkImageCount: limited.shrunkCount,
     undeterminedImageMimeTypes: Object.fromEntries(undetermined),
   };
 }

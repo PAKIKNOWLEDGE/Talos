@@ -59,11 +59,11 @@ Configuration and sessions are stored in `~/.talos` by default (`%USERPROFILE%\.
 
 Run `talos update` or enter `/update` to check for a new version. Talos shows the upgrade command; installation is always manual. To upgrade, run the npm install command above again.
 
-Release notes: [0.1.13](docs/releases/0.1.13.md) · [0.1.12](docs/releases/0.1.12.md) · [0.1.11](docs/releases/0.1.11.md) · [0.1.10](docs/releases/0.1.10.md).
+Release notes: [0.1.14](docs/releases/0.1.14.md) · [0.1.13](docs/releases/0.1.13.md) · [0.1.12](docs/releases/0.1.12.md) · [0.1.11](docs/releases/0.1.11.md).
 
 ## Release status
 
-Talos **0.1.13** is the current CLI line (`@pakiknowledge/tal0s-code`). This patch lets a custom or gateway model turn image input on or off in `/model` with Alt+I, and saves that choice on the model. Classic stays the default skin. See [verification records](docs/verification.md) and [current status](docs/status.md).
+Talos **0.1.14** is the current CLI line (`@pakiknowledge/tal0s-code`). This patch reduces pictures on the way out of a long chat and drops the oldest ones when a request is too large, so the same session can continue. Classic stays the default skin. See [verification records](docs/verification.md) and [current status](docs/status.md).
 
 The desktop GUI lives in the companion repository `T3rra-C0d3-Talos`.
 

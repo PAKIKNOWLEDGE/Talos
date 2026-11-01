@@ -59,11 +59,11 @@ talos
 
 运行 `talos update` 或在界面中输入 `/update` 检查新版。Talos 会显示升级命令，由你手动安装。再次执行上面的 npm 安装命令即可升级。
 
-更新说明：[0.1.13](docs/releases/0.1.13.md) · [0.1.12](docs/releases/0.1.12.md) · [0.1.11](docs/releases/0.1.11.md) · [0.1.10](docs/releases/0.1.10.md)。
+更新说明：[0.1.14](docs/releases/0.1.14.md) · [0.1.13](docs/releases/0.1.13.md) · [0.1.12](docs/releases/0.1.12.md) · [0.1.11](docs/releases/0.1.11.md)。
 
 ## 发行状态
 
-Talos **0.1.13** 为当前 CLI 发行线（`@pakiknowledge/tal0s-code`）。本补丁让自定义和网关模型在 `/model` 里用 Alt+I 打开或关闭图像输入，并把选择写在这个模型上。默认皮肤仍是 Classic。见[验证记录](docs/verification.md)与[当前状态](docs/status.md)。
+Talos **0.1.14** 为当前 CLI 发行线（`@pakiknowledge/tal0s-code`）。本补丁会在长会话发出图片前缩小 PNG 和 JPEG，请求仍然太大时卸掉最老的图，使同一段会话可以继续。默认皮肤仍是 Classic。见[验证记录](docs/verification.md)与[当前状态](docs/status.md)。
 
 桌面 GUI 在配套仓库 `T3rra-C0d3-Talos` 维护。
 

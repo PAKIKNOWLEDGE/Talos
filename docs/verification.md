@@ -366,6 +366,17 @@ Scope: Welcome shows this version's first changelog bullets in order. `/rules` l
 - **npm:** `@pakiknowledge/tal0s-code@0.1.12` published from the tarball built at that tag. Registry processing may take a few minutes.
 - **GitHub Release:** [v0.1.12](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.12) with `.tar.gz` + `.sha256`.
 
+## Outbound image body bound (0.1.14)
+
+Scope: long image chats reduce PNG and JPEG on the request copy and drop the oldest pictures when the route body is too large. Saved history keeps the originals. Classic remains the default skin. Version commit titles say Talos.
+
+### Verification
+
+- Focused Vitest passed for the image budget, the one shrink retry, packaged 0.1.14 notes, and the release command title. Resolver and checkpoint tests passed. `tsc -p tsconfig.standalone.json` passed.
+- Maintainer production check on the local build: the stuck image session continued.
+- `pnpm verify --profile windows` SHA is filled in after that gate.
+- Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-11-01 — **release: proceed** (no P0).
+
 ## Custom model image input (0.1.13)
 
 Scope: `/model` Alt+I saves image input for one custom or gateway model. An exact catalog id inherits image input only when every source agrees. Classic remains the default skin.

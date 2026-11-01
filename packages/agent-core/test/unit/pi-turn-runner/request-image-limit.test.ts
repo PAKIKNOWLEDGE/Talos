@@ -3,15 +3,26 @@ import type { AddressInfo } from "node:net";
 
 import type { AgentMessage } from "@earendil-works/pi-agent-core";
 import type { AssistantMessage, Message, Model, ToolResultMessage, UserMessage } from "@earendil-works/pi-ai";
+import { normalizeLLMError } from "@mavis/shared/llm-error-classifier";
+import { PNG } from "pngjs";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { projectAgentMessagesForModel } from "../../../src/pi-turn-runner/outbound-message-normalizer.js";
 import { PiTurnRunner } from "../../../src/pi-turn-runner/pi-turn-runner.js";
 import {
+  adoptSmallerRequestBody,
+  noteRequestBodySuccess,
+  requestBodyBudgetBytes,
+  requestBodyCeilingBytes,
+  resetRequestBodyBudgetForTests,
+} from "../../../src/pi-turn-runner/request-body-budget.js";
+import {
   DEFAULT_MAX_IMAGES_PER_REQUEST,
+  fitOutboundImages,
   limitRequestImages,
   normalizeMaxImagesPerRequest,
   resolveMaxImagesPerRequest,
+  serializedMessageBytes,
 } from "../../../src/pi-turn-runner/request-image-limit.js";
 import {
   RuntimeEventStatus,
@@ -272,6 +283,82 @@ describe("projectAgentMessagesForModel image ceiling", () => {
   });
 });
 
+describe("outbound image body budget", () => {
+  beforeEach(() => {
+    resetRequestBodyBudgetForTests();
+  });
+
+  it("re-encodes an oversized PNG on the request copy and leaves history unchanged", () => {
+    const png = new PNG({ width: 80, height: 40 });
+    png.data.fill(255);
+    const data = PNG.sync.write(png).toString("base64");
+    const original: UserMessage = {
+      role: "user",
+      content: [{ type: "image", data, mimeType: "image/png" }],
+      timestamp: 1,
+    };
+    const fitted = fitOutboundImages([original], { maxImages: 20, maxEdgePx: 8, maxBytes: 1024 * 1024 });
+    const block = fitted.messages[0]?.content;
+    expect(fitted.shrunkCount).toBe(1);
+    expect(Array.isArray(block) && block[0]).toMatchObject({ type: "image", mimeType: "image/jpeg" });
+    expect(original.content).toEqual([{ type: "image", data, mimeType: "image/png" }]);
+  });
+
+  it("drops the oldest images until the projected JSON fits a declared body budget", () => {
+    const data = "A".repeat(4_000);
+    const first: UserMessage = {
+      role: "user",
+      content: [{ type: "text", text: "old" }, { type: "image", data, mimeType: "image/webp" }],
+      timestamp: 1,
+    };
+    const second: UserMessage = {
+      role: "user",
+      content: [{ type: "text", text: "new" }, { type: "image", data, mimeType: "image/webp" }],
+      timestamp: 2,
+    };
+    const projected = projectAgentMessagesForModel(
+      [first, second],
+      model({ maxRequestBodyBytes: 5_000 }),
+    );
+    expect(projected.omittedImageCount).toBe(1);
+    expect(serializedMessageBytes(projected.messages)).toBeLessThanOrEqual(5_000);
+    expect(projected.messages[1]?.content).toEqual(second.content);
+    expect(first.content).toEqual([
+      { type: "text", text: "old" },
+      { type: "image", data, mimeType: "image/webp" },
+    ]);
+  });
+
+  it("learns a ceiling from a larger refusal and does not invent one for a declared route's connection loss", () => {
+    const route = model();
+    noteRequestBodySuccess(route, 5_000);
+    const data = "A".repeat(8_000);
+    const messages: Message[] = [
+      {
+        role: "user",
+        content: [{ type: "image", data, mimeType: "image/webp" }],
+        timestamp: 1,
+      },
+    ];
+    const sentBytes = serializedMessageBytes(messages);
+    const refused = normalizeLLMError({
+      errorMessage: "payload too large (18000 bytes > 9000 limit)",
+      statusCode: 413,
+    });
+    expect(adoptSmallerRequestBody(route, messages, sentBytes, refused)).toBe(true);
+    expect(requestBodyCeilingBytes(route)).toBeLessThan(sentBytes);
+
+    const declared = model({
+      baseUrl: "https://declared.invalid/v1",
+      maxRequestBodyBytes: 64_000_000,
+    });
+    noteRequestBodySuccess(declared, 100);
+    const disconnected = normalizeLLMError({ errorMessage: "Connection error." });
+    expect(adoptSmallerRequestBody(declared, messages, sentBytes, disconnected)).toBe(false);
+    expect(requestBodyBudgetBytes(declared)).toBe(64_000_000);
+  });
+});
+
 describe("text-only turn after more than 30 historical images (real HTTP transport)", () => {
   const LIMIT = 30;
   let server: ReturnType<typeof createServer>;
@@ -326,6 +413,7 @@ describe("text-only turn after more than 30 historical images (real HTTP transpo
   }
 
   beforeEach(async () => {
+    resetRequestBodyBudgetForTests();
     requestImages = [];
     server = createServer(respond);
     await new Promise<void>((resolve, reject) => {

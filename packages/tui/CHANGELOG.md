@@ -9,6 +9,14 @@ Internal refactors, test-only changes, and changes limited to other product surf
 
 Talos release notes are the first heading for that version. Upstream history below keeps older numbers, including another 0.1.4.
 
+## 0.1.14 · 2026-11-01
+
+### Improved
+
+- A long chat that keeps pictures no longer sends every original picture again at full size. PNG and JPEG pictures are reduced on the way out. When the request is still too large, the oldest pictures become a short note and the newest stay.
+- A model that declares a request size uses that size. A gateway that does not declare one is remembered after the first size refusal, and later turns stay within the last size that went through.
+- The saved chat still holds the original pictures. A higher limit, or another model with a higher limit, sends them again.
+
 ## 0.1.13 · 2026-10-31
 
 ### Improved
