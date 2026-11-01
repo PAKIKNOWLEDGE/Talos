@@ -377,6 +377,12 @@ Scope: long image chats reduce PNG and JPEG on the request copy and drop the old
 - `pnpm verify --profile windows` **PASS** at `54ae625` (~149s): 10 gates on win32. Skipped typecheck/capabilities/status/smoke/BYOK/policy/sandbox/package (not in the Windows contract).
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-11-01 — **release: proceed** (no P0).
 
+### Delivery (2026-11-01)
+
+- **Git:** `fix/outbound-image-budget` fast-forwarded to `main` (no version PR; `gh pr create` skipped as usual). Version commit `121ef53`, tag `v0.1.14`. Commit subject is `chore: release Talos 0.1.14`.
+- **npm:** `@pakiknowledge/tal0s-code@0.1.14` published from the tarball built at that tag. Registry processing may take a few minutes.
+- **GitHub Release:** [v0.1.14](https://github.com/PAKIKNOWLEDGE/Talos-Code-CLI/releases/tag/v0.1.14) with `.tar.gz` + `.sha256`.
+
 ## Custom model image input (0.1.13)
 
 Scope: `/model` Alt+I saves image input for one custom or gateway model. An exact catalog id inherits image input only when every source agrees. Classic remains the default skin.
