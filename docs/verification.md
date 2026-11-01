@@ -374,7 +374,7 @@ Scope: long image chats reduce PNG and JPEG on the request copy and drop the old
 
 - Focused Vitest passed for the image budget, the one shrink retry, packaged 0.1.14 notes, and the release command title. Resolver and checkpoint tests passed. `tsc -p tsconfig.standalone.json` passed.
 - Maintainer production check on the local build: the stuck image session continued.
-- `pnpm verify --profile windows` SHA is filled in after that gate.
+- `pnpm verify --profile windows` **PASS** at `54ae625` (~149s): 10 gates on win32. Skipped typecheck/capabilities/status/smoke/BYOK/policy/sandbox/package (not in the Windows contract).
 - Pre-release upstream scan: [upstream-pr-watch.md](upstream-pr-watch.md) 2026-11-01 — **release: proceed** (no P0).
 
 ## Custom model image input (0.1.13)
